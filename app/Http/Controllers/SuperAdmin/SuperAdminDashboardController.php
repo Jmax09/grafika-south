@@ -591,12 +591,48 @@ class SuperAdminDashboardController extends Controller
     //  Private helpers — trend builders
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Bucket expression for orders.created_at, per database driver.
+     *
+     * Local/dev runs on MySQL, production on Postgres — DATE_FORMAT() and
+     * YEAR() are MySQL-only and date() is not a Postgres function, so each
+     * driver needs its own spelling. The token column must stay aligned with
+     * the PHP format string used for the matching lookup key.
+     *
+     * @param 'daily'|'weekly'|'monthly'|'yearly' $unit
+     */
+    private function periodExpression(string $unit): string
+    {
+        return match (DB::connection()->getDriverName()) {
+            'sqlite' => match ($unit) {
+                'daily' => "strftime('%Y-%m-%d', created_at)",
+                'weekly' => "strftime('%Y-W', created_at)",
+                'monthly' => "strftime('%Y-%m', created_at)",
+                'yearly' => "cast(strftime('%Y', created_at) as integer)",
+            },
+            'pgsql' => match ($unit) {
+                'daily' => "to_char(created_at, 'YYYY-MM-DD')",
+                'weekly' => "to_char(created_at, 'IYYY-IW')",
+                'monthly' => "to_char(created_at, 'YYYY-MM')",
+                'yearly' => 'extract(year from created_at)',
+            },
+            default => match ($unit) {
+                'daily' => 'DATE(created_at)',
+                'weekly' => "DATE_FORMAT(created_at, '%x-%v')",
+                'monthly' => "DATE_FORMAT(created_at, '%Y-%m')",
+                'yearly' => 'YEAR(created_at)',
+            },
+        };
+    }
+
     private function buildDailyTrend(int $days)
     {
+        $expr = $this->periodExpression('daily');
+
         $raw = $this->activeRevenueOrders()
             ->where('created_at', '>=', now()->subDays($days - 1)->startOfDay())
             ->select(
-                DB::raw("DATE(created_at) as period_key"),
+                DB::raw("{$expr} as period_key"),
                 DB::raw('SUM(total_price) as revenue'),
                 DB::raw('COUNT(*) as total_orders')
             )
@@ -621,7 +657,7 @@ class SuperAdminDashboardController extends Controller
     private function buildWeeklyTrend(int $weeks)
     {
         $isSqlite = DB::connection()->getDriverName() === 'sqlite';
-        $expr = $isSqlite ? "strftime('%Y-%W', created_at)" : "DATE_FORMAT(created_at, '%x-%v')";
+        $expr = $this->periodExpression('weekly');
 
         $raw = $this->activeRevenueOrders()
             ->where('created_at', '>=', now()->subWeeks($weeks)->startOfWeek())
@@ -651,8 +687,7 @@ class SuperAdminDashboardController extends Controller
 
     private function buildMonthlyTrend(int $months = 12)
     {
-        $isSqlite = DB::connection()->getDriverName() === 'sqlite';
-        $expr = $isSqlite ? "strftime('%Y-%m', created_at)" : "DATE_FORMAT(created_at, '%Y-%m')";
+        $expr = $this->periodExpression('monthly');
 
         // Ensure at least 6 months window so the line/bar chart forms a proportional progression curve
         $monthsToDisplay = max(6, $months);
@@ -688,8 +723,7 @@ class SuperAdminDashboardController extends Controller
 
     private function buildYearlyTrend(int $years)
     {
-        $isSqlite = DB::connection()->getDriverName() === 'sqlite';
-        $expr = $isSqlite ? "cast(strftime('%Y', created_at) as integer)" : "YEAR(created_at)";
+        $expr = $this->periodExpression('yearly');
 
         $raw = $this->activeRevenueOrders()
             ->where('created_at', '>=', now()->subYears($years - 1)->startOfYear())
