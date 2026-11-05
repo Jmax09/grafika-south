@@ -18,7 +18,6 @@ WORKDIR /var/www/html
 
 COPY . .
 
-# I-install ang PHP dependencies gamit ang Composer
 RUN composer install --no-dev --optimize-autoloader
 
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
