@@ -13,6 +13,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Render terminates TLS at its load balancer, so the container only ever
+        // sees plain HTTP with X-Forwarded-Proto set. Without this, route() emits
+        // http:// URLs and forms trip the browser's insecure-submission warning.
+        $middleware->trustProxies(at: '*');
+
         $middleware->validateCsrfTokens(except: [
             'logout',
         ]);
