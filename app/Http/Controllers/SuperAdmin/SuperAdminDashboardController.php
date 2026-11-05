@@ -11,10 +11,14 @@ use App\Models\Product;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class SuperAdminDashboardController extends Controller
 {
+    /** How long the aggregated dashboard/analytics payload is served from cache. */
+    private const CACHE_TTL = 300;
+
     /** Order statuses that represent confirmed, billable work (excludes pending & cancelled). */
     private const ACTIVE_STATUSES = ['approved', 'design_review', 'printing', 'ready', 'shipped', 'completed'];
 
@@ -85,8 +89,19 @@ class SuperAdminDashboardController extends Controller
      * All-time by design: the old 30D/90D/12M/YTD/All switcher was removed as
      * redundant, leaving the trend chart's Daily/Weekly/Monthly/Yearly tabs as
      * the single time control.
+     *
+     * The payload is cached because building it costs 43 aggregate queries and
+     * production pays a trans-ocean round trip for each one. Numbers a member of
+     * staff changes can take up to five minutes to appear here.
      */
     public function dashboard()
+    {
+        $data = Cache::remember('super-admin.dashboard', self::CACHE_TTL, fn () => $this->dashboardData());
+
+        return view('super_admin.dashboard', $data);
+    }
+
+    private function dashboardData()
     {
         $activeStatuses = self::ACTIVE_STATUSES;
 
@@ -474,7 +489,7 @@ class SuperAdminDashboardController extends Controller
             ],
         ])->filter(fn($i) => $i->count > 0)->values();
 
-        return view('super_admin.dashboard', compact(
+        return compact(
             'totalRevenue',
             'scopedOrderCount',
             'monthlyRevenue',
@@ -524,7 +539,7 @@ class SuperAdminDashboardController extends Controller
             'supplierPaidTotal',
             'supplierOutstanding',
             'actionItems'
-        ));
+        );
     }
 
     /**
@@ -534,11 +549,26 @@ class SuperAdminDashboardController extends Controller
     public function analyticsData(Request $request)
     {
         $period = $request->input('period', 'monthly');
+        if (!in_array($period, ['daily', 'weekly', 'monthly', 'yearly'], true)) {
+            $period = 'monthly';
+        }
         $range  = (string) $request->input('range', 'all');
         if (!array_key_exists($range, self::RANGE_LABELS)) {
             $range = 'all';
         }
 
+        // Both inputs are whitelisted above, so the number of cache keys stays bounded.
+        $payload = Cache::remember(
+            "super-admin.analytics.{$period}.{$range}",
+            self::CACHE_TTL,
+            fn () => $this->analyticsPayload($period, $range)
+        );
+
+        return response()->json($payload);
+    }
+
+    private function analyticsPayload(string $period, string $range): array
+    {
         $trend = match ($period) {
             'daily'   => $this->buildDailyTrend(30),
             'weekly'  => $this->buildWeeklyTrend(12),
@@ -564,7 +594,7 @@ class SuperAdminDashboardController extends Controller
             ->whereIn('status', ['pending', 'design_review', 'approved', 'printing', 'ready'])
             ->count();
 
-        return response()->json([
+        return [
             'labels'  => $trend->pluck('label')->values(),
             'revenue' => $trend->pluck('revenue')->values(),
             'orders'  => $trend->pluck('total_orders')->values(),
@@ -584,7 +614,7 @@ class SuperAdminDashboardController extends Controller
                     ->whereIn('status', ['approved', 'design_review', 'printing', 'ready', 'shipped'])->count(),
                 'pendingOrdersCount' => (int) Order::where('status', 'pending')->whereNull('parent_id')->count(),
             ],
-        ]);
+        ];
     }
 
     // ─────────────────────────────────────────────────────────────────────────

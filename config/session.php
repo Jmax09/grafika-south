@@ -11,14 +11,18 @@ return [
     |
     | This option determines the default session driver that is utilized for
     | incoming requests. Laravel supports a variety of storage options to
-    | persist session data. Database storage is a great default choice.
+    | persist session data.
     |
     | Supported: "file", "cookie", "database", "memcached",
     |            "redis", "dynamodb", "array"
     |
+    | "file" is the default here because Render sits in the US and Supabase in
+    | Sydney (~287ms per query), and a database session costs one read plus one
+    | write on every request. Set SESSION_DRIVER=database if sessions must
+    | survive a redeploy, or SESSION_DRIVER=redis once a cache server exists.
     */
 
-    'driver' => env('SESSION_DRIVER', 'database'),
+    'driver' => env('SESSION_DRIVER', 'file'),
 
     /*
     |--------------------------------------------------------------------------
