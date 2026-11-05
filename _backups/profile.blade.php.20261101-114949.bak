@@ -1,0 +1,1620 @@
+@extends('layouts.app')
+
+@section('title', 'Account Settings & Profile - Grafika South')
+
+@section('content')
+<style>
+    body {
+        background-color: #FAF7F8 !important;
+    }
+
+    .customer-dashboard-layout {
+        display: flex;
+        gap: 2rem;
+        align-items: flex-start;
+        margin-top: -0.5rem;
+    }
+
+    /* Customer Dashboard Layout - Full Width for Content */
+    .customer-sidebar, aside.customer-sidebar {
+        display: none !important;
+    }
+
+    /* Main Panel Content Area */
+    .customer-main-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+
+    .panel-header-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #0F172A;
+        margin-bottom: 0.25rem;
+    }
+
+    .panel-header-subtitle {
+        color: #64748B;
+        font-size: 0.92rem;
+        margin-bottom: 1.75rem;
+    }
+
+    /* === Profile Cards === */
+    .profile-card {
+        background: #FFFFFF;
+        border-radius: 16px;
+        border: 1px solid #E9EFF6;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* === User Overview Card === */
+    .user-overview-card {
+        display: flex;
+        align-items: center;
+        gap: 1.75rem;
+        border-left: 4px solid #0099FF;
+    }
+
+    /* === User Avatar Upload Styling === */
+    .user-avatar-container {
+        position: relative;
+        display: inline-block;
+        cursor: default;
+        flex-shrink: 0;
+    }
+
+    .user-avatar-container.is-editable {
+        cursor: pointer;
+    }
+
+    .user-avatar-circle {
+        width: 74px;
+        height: 74px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0099FF, #EC008C);
+        color: #FFFFFF;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.85rem;
+        font-weight: 800;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 4px 14px rgba(0, 153, 255, 0.28);
+        border: 2px solid #FFFFFF;
+        transition: transform 0.2s ease;
+    }
+
+    .user-avatar-container:hover .user-avatar-circle {
+        transform: scale(1.02);
+    }
+
+    .user-avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        display: block;
+    }
+
+    .avatar-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.65);
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #FFFFFF;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        pointer-events: none;
+    }
+
+    .user-avatar-container.is-editable:hover .avatar-overlay {
+        opacity: 1;
+    }
+
+    .avatar-overlay i {
+        font-size: 1.05rem;
+        margin-bottom: 2px;
+    }
+
+    .avatar-overlay span {
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .avatar-badge-edit {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #0099FF;
+        color: #FFFFFF;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        border: 2.5px solid #FFFFFF;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        transition: all 0.2s ease;
+        cursor: pointer;
+        z-index: 5;
+    }
+
+    .user-avatar-container.is-editable .avatar-badge-edit {
+        display: flex;
+    }
+
+    .user-avatar-container.is-editable:hover .avatar-badge-edit {
+        background: #0080FF;
+        transform: scale(1.08);
+    }
+
+    .avatar-upload-spinner {
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.88);
+        border-radius: 50%;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        color: #0099FF;
+        font-size: 1.4rem;
+    }
+
+    .avatar-actions-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: 0.2rem;
+    }
+
+    .btn-avatar-action {
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 0.28rem 0.75rem;
+        border-radius: 8px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        border: 1.5px solid #CBD5E1;
+        background: #FFFFFF;
+        color: #475569;
+        transition: all 0.2s ease;
+    }
+
+    .btn-avatar-action:hover {
+        border-color: #0099FF;
+        color: #0099FF;
+        background: #EFF6FF;
+    }
+
+    .btn-avatar-remove {
+        color: #E11930;
+        border-color: #FECDD3;
+        background: #FFF5F5;
+    }
+
+    .btn-avatar-remove:hover {
+        border-color: #E11930;
+        color: #FFFFFF;
+        background: #E11930;
+    }
+
+    /* Toast Notification (Sa Gilid) */
+    .profile-toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: #0F172A;
+        color: #FFFFFF;
+        padding: 0.85rem 1.4rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.22);
+        font-size: 0.9rem;
+        font-weight: 600;
+        display: none;
+        align-items: center;
+        gap: 0.75rem;
+        z-index: 99999;
+        animation: slideUpToast 0.3s ease forwards;
+        cursor: pointer;
+    }
+
+    .profile-toast.toast-success {
+        border-left: 4px solid #10B981;
+    }
+
+    .profile-toast.toast-error {
+        border-left: 4px solid #E11930;
+    }
+
+    @keyframes slideUpToast {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .user-overview-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .user-overview-name {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #0F172A;
+        line-height: 1.2;
+    }
+
+    .user-overview-email {
+        font-size: 0.875rem;
+        color: #64748B;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .badge-account-type {
+        display: inline-flex;
+        align-items: center;
+        background: #E6F4FF;
+        color: #0080FF;
+        font-size: 0.72rem;
+        font-weight: 800;
+        padding: 0.22rem 0.7rem;
+        border-radius: 9999px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: 0.1rem;
+        width: fit-content;
+    }
+
+    /* === Card Section Title === */
+    .card-section-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #0F172A;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+    }
+
+    .card-section-title i {
+        color: #0099FF;
+        font-size: 1rem;
+    }
+
+    /* === Form Styles === */
+    .form-group {
+        margin-bottom: 1.4rem;
+    }
+
+    .form-label {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 0.45rem;
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.7rem 1rem;
+        border: 1.5px solid #CBD5E1;
+        border-radius: 10px;
+        font-size: 0.92rem;
+        background: #FFFFFF;
+        color: #0F172A;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        outline: none;
+    }
+
+    .form-input:focus {
+        border-color: #0099FF;
+        box-shadow: 0 0 0 3px rgba(0, 153, 255, 0.1);
+    }
+
+    .form-input:disabled {
+        background: #F8FAFC;
+        color: #94A3B8;
+        cursor: not-allowed;
+    }
+
+    .input-hint {
+        font-size: 0.78rem;
+        color: #94A3B8;
+        margin-top: 0.35rem;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .form-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+    }
+
+    @media (max-width: 767.98px) {
+        .customer-dashboard-layout {
+            flex-direction: column !important;
+            gap: 1.25rem !important;
+        }
+        .customer-sidebar {
+            display: none !important;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .form-grid-2 {
+            grid-template-columns: 1fr !important;
+            gap: 0.9rem !important;
+        }
+        .profile-card {
+            padding: 1.25rem 1rem !important;
+            border-radius: 14px !important;
+        }
+        .user-overview-card {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 1rem !important;
+        }
+    }
+
+    /* === Address Section Divider === */
+    .address-section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin: 1.75rem 0 1.5rem 0;
+        padding-bottom: 0.75rem;
+        border-bottom: 1.5px solid #F1F5F9;
+    }
+
+    .address-section-header h3 {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #0F172A;
+        margin: 0;
+    }
+
+    .address-section-header i {
+        color: #0099FF;
+    }
+
+    /* === Dropdown Wrapper === */
+    .profile-dropdown-wrap {
+        position: relative;
+    }
+
+    .profile-dropdown-wrap select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.9rem center;
+        background-size: 1em;
+        padding-right: 2.5rem !important;
+    }
+
+    .profile-dropdown-wrap select:disabled {
+        background-color: #F8FAFC;
+        color: #94A3B8;
+        cursor: not-allowed;
+    }
+
+    /* === Save Button === */
+    .btn-save-profile {
+        background: #0099FF;
+        color: #FFFFFF;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-save-profile:hover {
+        background: #0080FF;
+        box-shadow: 0 4px 12px rgba(0, 128, 255, 0.3);
+    }
+
+    /* === Edit Profile Button on Side & Safe Mode === */
+    .user-overview-actions {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-shrink: 0;
+    }
+
+    .btn-edit-profile-card {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.65rem 1.25rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        border: 1.5px solid #0099FF;
+        background: #FFFFFF;
+        color: #0099FF;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 6px rgba(0, 153, 255, 0.12);
+        white-space: nowrap;
+    }
+
+    .btn-edit-profile-card:hover {
+        background: #0099FF;
+        color: #FFFFFF;
+        box-shadow: 0 4px 12px rgba(0, 153, 255, 0.25);
+        transform: translateY(-1px);
+    }
+
+    .btn-edit-profile-card.is-editing {
+        border-color: #CBD5E1;
+        background: #F1F5F9;
+        color: #475569;
+        box-shadow: none;
+    }
+
+    .btn-edit-profile-card.is-editing:hover {
+        background: #E2E8F0;
+        color: #0F172A;
+        border-color: #94A3B8;
+    }
+
+    .btn-edit-profile-toggle-sm {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.95rem;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.82rem;
+        border: 1.5px solid #CBD5E1;
+        background: #FFFFFF;
+        color: #334155;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        white-space: nowrap;
+    }
+
+    .btn-edit-profile-toggle-sm:hover {
+        border-color: #0099FF;
+        color: #0099FF;
+        background: #F0F9FF;
+    }
+
+    .btn-edit-profile-toggle-sm.is-editing {
+        border-color: #CBD5E1;
+        background: #F1F5F9;
+        color: #64748B;
+    }
+
+    /* Locked state indicators */
+    .form-input.is-locked {
+        background-color: #F8FAFC !important;
+        border-color: #E2E8F0 !important;
+        color: #334155 !important;
+        cursor: default !important;
+    }
+
+    .form-input.is-locked:focus {
+        border-color: #E2E8F0 !important;
+        box-shadow: none !important;
+    }
+
+    .profile-dropdown-wrap.is-locked {
+        pointer-events: none;
+        opacity: 0.75;
+    }
+
+    .profile-dropdown-wrap.is-locked select {
+        background-color: #F8FAFC !important;
+        border-color: #E2E8F0 !important;
+        color: #64748B !important;
+        cursor: default !important;
+    }
+
+    .profile-bottom-actions {
+        margin-top: 2rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid #F1F5F9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .profile-locked-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.84rem;
+        color: #64748B;
+        background: #F8FAFC;
+        padding: 0.5rem 0.95rem;
+        border-radius: 8px;
+        border: 1px solid #E2E8F0;
+    }
+
+    .profile-locked-badge i {
+        color: #0099FF;
+    }
+
+    .btn-cancel-profile {
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        border: 1.5px solid #CBD5E1;
+        background: #FFFFFF;
+        color: #475569;
+        font-weight: 700;
+        font-size: 0.92rem;
+        cursor: pointer;
+        transition: all 0.18s ease;
+    }
+
+    .btn-cancel-profile:hover {
+        background: #F1F5F9;
+        color: #0F172A;
+        border-color: #94A3B8;
+    }
+
+    .btn-delete-account-subtle {
+        padding: 0.6rem 1.1rem;
+        border-radius: 10px;
+        border: 1.5px solid #FECACA;
+        background: #FEF2F2;
+        color: #DC2626;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.15s;
+    }
+
+    .btn-delete-account-subtle:hover {
+        background: #FEE2E2;
+        border-color: #FCA5A5;
+    }
+
+    @media (max-width: 640px) {
+        .user-overview-actions {
+            width: 100%;
+            margin-left: 0 !important;
+            margin-top: 0.5rem;
+            display: flex;
+            justify-content: flex-start;
+        }
+    }
+
+    /* === Security Card === */
+    .security-info-text {
+        font-size: 0.875rem;
+        color: #64748B;
+        margin-bottom: 1.25rem;
+        line-height: 1.65;
+    }
+
+    .btn-return-home {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1.3rem;
+        border: 1.5px solid #CBD5E1;
+        border-radius: 10px;
+        color: #475569;
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .btn-return-home:hover {
+        border-color: #0099FF;
+        color: #0099FF;
+        background: #EFF6FF;
+    }
+
+    .field-error {
+        color: #E11930;
+        font-size: 0.8rem;
+        margin-top: 0.3rem;
+        display: block;
+    }
+</style>
+
+<div class="customer-dashboard-layout flex flex-col md:flex-row gap-6 items-start">
+    <!-- LEFT SIDEBAR NAVIGATION -->
+    <x-customer-sidebar class="hidden md:block w-64 shrink-0 sticky top-20 z-30" />
+
+    <!-- DEDICATED PROFILE & ACCOUNT SETTINGS PANEL -->
+    <main class="customer-main-content flex-1 w-full min-w-0">
+        <div class="panel-header-title">Account Settings &amp; Profile</div>
+        <div class="panel-header-subtitle">
+            Manage your personal info, contact details, and account preferences.
+        </div>
+
+
+
+        <!-- USER SUMMARY CARD -->
+        <div class="profile-card user-overview-card">
+            <!-- AVATAR WITH UPLOAD OVERLAY & BADGE -->
+            <div class="user-avatar-container" id="avatar-container-trigger" title="Click to change profile picture">
+                <div class="user-avatar-circle" id="avatar-circle-display">
+                    @if($user->avatar)
+                        <img src="{{ asset('storage/' . $user->avatar) }}" alt="{{ $user->name }}" class="user-avatar-img" id="avatar-img-element">
+                    @else
+                        <span id="avatar-initials-element">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
+                    @endif
+                    <div class="avatar-overlay">
+                        <i class="fa-solid fa-camera"></i>
+                        <span>Change</span>
+                    </div>
+                    <div class="avatar-upload-spinner" id="avatar-upload-spinner">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i>
+                    </div>
+                </div>
+                <div class="avatar-badge-edit" title="Change photo">
+                    <i class="fa-solid fa-camera"></i>
+                </div>
+            </div>
+
+            <!-- USER INFO & ACTION BUTTONS -->
+            <div class="user-overview-info">
+                <div class="user-overview-name">{{ $user->name }}</div>
+                <div class="user-overview-email">
+                    <i class="fa-regular fa-envelope"></i>
+                    {{ $user->email }}
+                </div>
+                <div class="avatar-actions-wrap">
+                    <span class="badge-account-type">Customer Account</span>
+                    <button type="button" class="btn-avatar-action" id="btn-trigger-upload" style="display: none;">
+                        <i class="fa-solid fa-cloud-arrow-up" style="color: #0099FF;"></i> Upload Photo
+                    </button>
+                    <button type="button" class="btn-avatar-action btn-avatar-remove" id="btn-trigger-remove" style="display: none;">
+                        <i class="fa-regular fa-trash-can"></i> Remove
+                    </button>
+                </div>
+            </div>
+
+            <!-- EDIT BUTTON ON SIDE -->
+            <div class="user-overview-actions">
+                <button type="button" id="btnToggleProfileEdit" onclick="toggleProfileEdit()" class="btn-edit-profile-card" title="Click to unlock and edit profile fields">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Edit Profile</span>
+                </button>
+            </div>
+
+            <!-- Hidden File Input for Avatar Upload -->
+            <form id="avatar-hidden-form" action="{{ route('customer.profile.avatar.update') }}" method="POST" enctype="multipart/form-data" style="display: none;">
+                @csrf
+                <input type="file" id="avatar-file-input" name="avatar" accept="image/jpeg,image/png,image/webp,image/gif">
+            </form>
+        </div>
+
+        <!-- FLOATING TOAST NOTIFICATION (Sa Gilid) -->
+        <div id="profile-toast-box" class="profile-toast" onclick="this.style.display='none'" title="Click to dismiss">
+            <i class="fa-solid fa-circle-check" id="toast-icon" style="color: #10B981; font-size: 1.15rem;"></i>
+            <span id="toast-text">Success message</span>
+            <i class="fa-solid fa-xmark" style="font-size: 0.85rem; opacity: 0.6; margin-left: 0.4rem; cursor: pointer;"></i>
+        </div>
+
+        <!-- PROFILE EDIT FORM PANEL -->
+        <div class="profile-card">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+                <h3 class="card-section-title" style="margin-bottom: 0;">
+                    <i class="fa-solid fa-id-card"></i> Personal Information
+                </h3>
+            </div>
+
+            <form id="profile-edit-form" action="{{ route('customer.profile.update') }}" method="POST">
+                @csrf
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" id="profile-name" name="name" class="form-input" value="{{ old('name', $user->name) }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-input is-locked" value="{{ $user->email }}" disabled>
+                        <span class="input-hint">
+                            <i class="fa-solid fa-lock" style="font-size: 0.7rem;"></i> Email cannot be changed here.
+                        </span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel" 
+                           id="profile-contact" 
+                           name="contact" 
+                           class="form-input" 
+                           value="{{ old('contact', $user->contact ?: $user->phone) }}" 
+                           placeholder="09XXXXXXXXX"
+                           maxlength="11"
+                           inputmode="numeric"
+                           pattern="09[0-9]{9}"
+                           autocomplete="tel">
+                    @if($errors->has('contact'))
+                        <span class="field-error">{{ $errors->first('contact') }}</span>
+                    @endif
+                </div>
+
+                <div class="address-section-header">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <h3>Philippine Delivery Address</h3>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Region <span style="color: #E11930;">*</span></label>
+                        <div class="profile-dropdown-wrap">
+                            <select id="profile-region" name="region" class="form-input" required>
+                                <option value="" disabled selected>Select Region</option>
+                            </select>
+                        </div>
+                        @if($errors->has('region'))
+                            <span class="field-error">{{ $errors->first('region') }}</span>
+                        @endif
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Province <span style="color: #E11930;">*</span></label>
+                        <div class="profile-dropdown-wrap">
+                            <select id="profile-province" name="province" class="form-input" required disabled>
+                                <option value="" disabled selected>Select Province</option>
+                            </select>
+                        </div>
+                        @if($errors->has('province'))
+                            <span class="field-error">{{ $errors->first('province') }}</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label class="form-label">City / Municipality <span style="color: #E11930;">*</span></label>
+                        <div class="profile-dropdown-wrap">
+                            <select id="profile-city" name="city" class="form-input" required disabled>
+                                <option value="" disabled selected>Select City</option>
+                            </select>
+                        </div>
+                        @if($errors->has('city'))
+                            <span class="field-error">{{ $errors->first('city') }}</span>
+                        @endif
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Barangay <span style="color: #E11930;">*</span></label>
+                        <div class="profile-dropdown-wrap">
+                            <select id="profile-barangay" name="barangay" class="form-input" required disabled>
+                                <option value="" disabled selected>Select Barangay</option>
+                            </select>
+                        </div>
+                        @if($errors->has('barangay'))
+                            <span class="field-error">{{ $errors->first('barangay') }}</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Street / House / Unit / Building</label>
+                    <input type="text" id="profile-street" name="street" class="form-input"
+                        value="{{ old('street', $user->street) }}"
+                        placeholder="e.g. 123 Mabini St., Unit 4B, Green Heights Subd.">
+                    @if($errors->has('street'))
+                        <span class="field-error">{{ $errors->first('street') }}</span>
+                    @endif
+                </div>
+
+                <div class="profile-bottom-actions" id="profile-bottom-actions" style="display: none;">
+                    <button type="button" onclick="openDeleteAccountModal()" class="btn-delete-account-subtle" id="btn-delete-account" style="display: none;">
+                        <i class="fa-solid fa-trash-can"></i> Delete Account
+                    </button>
+
+                    <div id="profile-save-actions" style="display: none; align-items: center; gap: 0.75rem;">
+                        <button type="button" onclick="cancelProfileEdit()" class="btn-cancel-profile">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-save-profile">
+                            <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+
+{{-- ============================================================ --}}
+{{-- DELETE ACCOUNT CONFIRMATION MODAL --}}
+{{-- ============================================================ --}}
+<div id="deleteAccountModal"
+    style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 99999; align-items: center; justify-content: center; padding: 1rem;"
+    onclick="if(event.target === this) closeDeleteAccountModal()">
+    <div style="background: #FFFFFF; border-radius: 16px; width: 100%; max-width: 480px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.04); border: 1px solid #E2E8F0; overflow: hidden; animation: deleteModalSlideUp 0.22s cubic-bezier(0.4,0,0.2,1);">
+
+        {{-- Modal Header --}}
+        <div style="background: #FEF2F2; border-bottom: 1px solid #FEE2E2; padding: 1.25rem 1.5rem; display: flex; align-items: center; gap: 0.85rem;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: #FEE2E2; color: #DC2626; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1.05rem; font-weight: 800; color: #991B1B; margin: 0 0 0.15rem 0;">Delete Account Permanently</h3>
+                <p style="font-size: 0.8rem; color: #7F1D1D; margin: 0;">This action cannot be reversed.</p>
+            </div>
+            <button type="button" onclick="closeDeleteAccountModal()" style="margin-left: auto; background: none; border: none; color: #94A3B8; font-size: 1.1rem; cursor: pointer; padding: 4px; border-radius: 6px; transition: color 0.15s;" onmouseover="this.style.color='#DC2626'" onmouseout="this.style.color='#94A3B8'">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        {{-- Modal Body --}}
+        <div style="padding: 1.5rem;">
+            <p style="font-size: 0.88rem; color: #475569; line-height: 1.55; margin: 0 0 1.25rem 0;">
+                You are about to <strong style="color: #DC2626;">permanently delete your Grafika South account</strong>. All your orders, profile data, and uploaded files will be removed forever.
+            </p>
+
+            @if($errors->has('delete_password'))
+                <div style="background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.84rem; color: #991B1B; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    {{ $errors->first('delete_password') }}
+                </div>
+            @endif
+
+            <form id="deleteAccountForm" action="{{ route('customer.profile.delete') }}" method="POST">
+                @csrf
+                @method('DELETE')
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label style="display: block; font-size: 0.83rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
+                        Confirm with your current password <span style="color: #DC2626;">*</span>
+                    </label>
+                    <input type="password"
+                        name="password"
+                        id="delete_password_input"
+                        placeholder="Enter your account password..."
+                        required
+                        style="width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #CBD5E1; border-radius: 10px; font-size: 0.92rem; font-family: inherit; outline: none; transition: border-color 0.2s; box-sizing: border-box;"
+                        onfocus="this.style.borderColor='#EF4444'; this.style.boxShadow='0 0 0 4px rgba(239,68,68,0.12)'"
+                        onblur="this.style.borderColor='#CBD5E1'; this.style.boxShadow='none'">
+                </div>
+
+                <div style="background: #FEF3C7; border: 1px solid #FDE68A; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.82rem; color: #92400E; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-triangle-exclamation" style="color: #D97706; flex-shrink: 0;"></i>
+                    <span>Once deleted, your account <strong>cannot be recovered</strong>. Please make sure you want to proceed.</span>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                    <button type="button" onclick="closeDeleteAccountModal()"
+                        style="padding: 0.6rem 1.25rem; border-radius: 10px; border: 1.5px solid #CBD5E1; background: #FFFFFF; color: #475569; font-weight: 700; font-size: 0.88rem; cursor: pointer; transition: all 0.18s ease;"
+                        onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='#FFFFFF'">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        style="padding: 0.6rem 1.35rem; border-radius: 10px; border: none; background: #DC2626; color: #FFFFFF; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem; box-shadow: 0 4px 12px rgba(220,38,38,0.3); transition: all 0.18s ease;"
+                        onmouseover="this.style.background='#B91C1C'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#DC2626'; this.style.transform='none'">
+                        <i class="fa-solid fa-trash-can"></i> Yes, Delete My Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- ============================================================ --}}
+{{-- REMOVE AVATAR CONFIRMATION MODAL --}}
+{{-- ============================================================ --}}
+<div id="deleteAvatarModal"
+    style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 99999; align-items: center; justify-content: center; padding: 1rem;"
+    onclick="if(event.target === this) closeDeleteAvatarModal()">
+    <div style="background: #FFFFFF; border-radius: 16px; width: 100%; max-width: 440px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.04); border: 1px solid #E2E8F0; overflow: hidden; animation: deleteModalSlideUp 0.22s cubic-bezier(0.4,0,0.2,1);">
+
+        {{-- Modal Header --}}
+        <div style="background: #FFF7ED; border-bottom: 1px solid #FFEDD5; padding: 1.25rem 1.5rem; display: flex; align-items: center; gap: 0.85rem;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: #FFEDD5; color: #EA580C; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0;">
+                <i class="fa-solid fa-camera-rotate"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1.05rem; font-weight: 800; color: #9A3412; margin: 0 0 0.15rem 0;">Remove Profile Picture</h3>
+                <p style="font-size: 0.8rem; color: #C2410C; margin: 0;">Revert to default letter initials</p>
+            </div>
+            <button type="button" onclick="closeDeleteAvatarModal()" style="margin-left: auto; background: none; border: none; color: #94A3B8; font-size: 1.1rem; cursor: pointer; padding: 4px; border-radius: 6px; transition: color 0.15s;" onmouseover="this.style.color='#EA580C'" onmouseout="this.style.color='#94A3B8'">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        {{-- Modal Body --}}
+        <div style="padding: 1.5rem;">
+            <p style="font-size: 0.9rem; color: #475569; line-height: 1.55; margin: 0 0 1.25rem 0;">
+                Are you sure you want to remove your current profile picture? Your profile will revert to displaying your default letter initials (<strong>{{ strtoupper(substr($user->name, 0, 1)) }}</strong>).
+            </p>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" onclick="closeDeleteAvatarModal()"
+                    style="padding: 0.6rem 1.25rem; border-radius: 10px; border: 1.5px solid #CBD5E1; background: #FFFFFF; color: #475569; font-weight: 700; font-size: 0.88rem; cursor: pointer; transition: all 0.18s ease;"
+                    onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='#FFFFFF'">
+                    Cancel
+                </button>
+                <button type="button" id="btn-confirm-delete-avatar"
+                    style="padding: 0.6rem 1.35rem; border-radius: 10px; border: none; background: #EA580C; color: #FFFFFF; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem; box-shadow: 0 4px 12px rgba(234,88,12,0.3); transition: all 0.18s ease;"
+                    onmouseover="this.style.background='#C2410C'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#EA580C'; this.style.transform='none'">
+                    <i class="fa-regular fa-trash-can"></i> Yes, Remove Photo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes deleteModalSlideUp {
+    from { transform: translateY(12px) scale(0.98); opacity: 0; }
+    to   { transform: translateY(0)    scale(1);    opacity: 1; }
+}
+</style>
+
+@push('scripts')
+<script>
+// ── Delete Account Modal ─────────────────────────────────────────
+function openDeleteAccountModal() {
+    const modal = document.getElementById('deleteAccountModal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    // Focus password input after animation
+    setTimeout(() => {
+        const input = document.getElementById('delete_password_input');
+        if (input) input.focus();
+    }, 250);
+}
+
+function closeDeleteAccountModal() {
+    const modal = document.getElementById('deleteAccountModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+    // Clear password input on close
+    const input = document.getElementById('delete_password_input');
+    if (input) input.value = '';
+}
+
+// ── Remove Avatar Modal ──────────────────────────────────────────
+function openDeleteAvatarModal() {
+    const modal = document.getElementById('deleteAvatarModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeDeleteAvatarModal() {
+    const modal = document.getElementById('deleteAvatarModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+// Close modals on Escape key
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        closeDeleteAccountModal();
+        closeDeleteAvatarModal();
+    }
+});
+
+// Auto-open modal if validation returned a delete_password error
+@if($errors->has('delete_password') || session('show_delete_modal'))
+document.addEventListener('DOMContentLoaded', function () {
+    openDeleteAccountModal();
+});
+@endif
+// ── End Modals ───────────────────────────────────────────────────
+
+// --- CORNER TOAST NOTIFICATION (SA GILID) ---
+let _toastTimer = null;
+function showToast(message, isError = false) {
+    const toastBox  = document.getElementById('profile-toast-box');
+    const toastText = document.getElementById('toast-text');
+    const toastIcon = document.getElementById('toast-icon');
+    if (!toastBox || !toastText) return;
+    if (_toastTimer) clearTimeout(_toastTimer);
+    toastText.textContent = message;
+    if (isError) {
+        toastBox.className = 'profile-toast toast-error';
+        if (toastIcon) {
+            toastIcon.className = 'fa-solid fa-triangle-exclamation';
+            toastIcon.style.color = '#E11930';
+        }
+    } else {
+        toastBox.className = 'profile-toast toast-success';
+        if (toastIcon) {
+            toastIcon.className = 'fa-solid fa-circle-check';
+            toastIcon.style.color = '#10B981';
+        }
+    }
+    toastBox.style.display = 'inline-flex';
+    _toastTimer = setTimeout(() => {
+        toastBox.style.display = 'none';
+    }, 4500);
+}
+
+// --- PROFILE SAFE-EDIT TOGGLE SYSTEM ---
+let isProfileEditMode = false;
+
+const initialProfileValues = {
+    name: @json(old('name', $user->name)),
+    contact: @json(old('contact', $user->contact ?: $user->phone)),
+    street: @json(old('street', $user->street))
+};
+
+function setProfileEditMode(enable) {
+    isProfileEditMode = enable;
+    const nameInput = document.getElementById('profile-name');
+    const contactInput = document.getElementById('profile-contact');
+    const streetInput = document.getElementById('profile-street');
+    const dropdownWraps = document.querySelectorAll('.profile-dropdown-wrap');
+    const regionSelect = document.getElementById('profile-region');
+    const provinceSelect = document.getElementById('profile-province');
+    const citySelect = document.getElementById('profile-city');
+    const barangaySelect = document.getElementById('profile-barangay');
+    
+    const saveActions = document.getElementById('profile-save-actions');
+    const topBtn = document.getElementById('btnToggleProfileEdit');
+    const uploadBtn = document.getElementById('btn-trigger-upload');
+    const removeBtn2 = document.getElementById('btn-trigger-remove');
+    const deleteBtn = document.getElementById('btn-delete-account');
+
+    if (enable) {
+        // Unlock inputs
+        if (nameInput) {
+            nameInput.readOnly = false;
+            nameInput.classList.remove('is-locked');
+        }
+        if (contactInput) {
+            contactInput.readOnly = false;
+            contactInput.classList.remove('is-locked');
+            if (!contactInput.value || !contactInput.value.startsWith('09')) {
+                let digits = (contactInput.value || '').replace(/\D/g, '');
+                if (digits.startsWith('639')) digits = '09' + digits.slice(3);
+                else if (digits.startsWith('9')) digits = '09' + digits.slice(1);
+                else digits = '09' + digits.replace(/^0*/, '');
+                contactInput.value = digits.slice(0, 11);
+            }
+        }
+        if (streetInput) {
+            streetInput.readOnly = false;
+            streetInput.classList.remove('is-locked');
+        }
+
+        dropdownWraps.forEach(wrap => wrap.classList.remove('is-locked'));
+        if (regionSelect) regionSelect.disabled = false;
+        if (provinceSelect && provinceSelect.options.length > 1) provinceSelect.disabled = false;
+        if (citySelect && citySelect.options.length > 1) citySelect.disabled = false;
+        if (barangaySelect && barangaySelect.options.length > 1) barangaySelect.disabled = false;
+
+        if (saveActions) saveActions.style.display = 'inline-flex';
+        if (uploadBtn) uploadBtn.style.display = 'inline-flex';
+        const hasImg = !!document.getElementById('avatar-img-element');
+        if (removeBtn2) removeBtn2.style.display = hasImg ? 'inline-flex' : 'none';
+        if (deleteBtn) deleteBtn.style.display = 'inline-flex';
+        const bottomActions = document.getElementById('profile-bottom-actions');
+        if (bottomActions) bottomActions.style.display = 'flex';
+        const avatarBox = document.getElementById('avatar-container-trigger');
+        if (avatarBox) avatarBox.classList.add('is-editable');
+
+        if (topBtn) {
+            topBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> <span>Cancel Edit</span>';
+            topBtn.classList.add('is-editing');
+            topBtn.title = 'Cancel editing and lock fields';
+        }
+        if (nameInput) nameInput.focus();
+    } else {
+        // Lock inputs
+        if (nameInput) {
+            nameInput.readOnly = true;
+            nameInput.classList.add('is-locked');
+        }
+        if (contactInput) {
+            contactInput.readOnly = true;
+            contactInput.classList.add('is-locked');
+        }
+        if (streetInput) {
+            streetInput.readOnly = true;
+            streetInput.classList.add('is-locked');
+        }
+
+        dropdownWraps.forEach(wrap => wrap.classList.add('is-locked'));
+        if (regionSelect) regionSelect.disabled = true;
+        if (provinceSelect) provinceSelect.disabled = true;
+        if (citySelect) citySelect.disabled = true;
+        if (barangaySelect) barangaySelect.disabled = true;
+
+        if (saveActions) saveActions.style.display = 'none';
+        if (uploadBtn) uploadBtn.style.display = 'none';
+        if (removeBtn2) removeBtn2.style.display = 'none';
+        if (deleteBtn) deleteBtn.style.display = 'none';
+        const bottomActions = document.getElementById('profile-bottom-actions');
+        if (bottomActions) bottomActions.style.display = 'none';
+        const avatarBox = document.getElementById('avatar-container-trigger');
+        if (avatarBox) avatarBox.classList.remove('is-editable');
+
+        if (topBtn) {
+            topBtn.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> <span>Edit Profile</span>';
+            topBtn.classList.remove('is-editing');
+            topBtn.title = 'Click to unlock and edit profile fields';
+        }
+    }
+}
+
+function toggleProfileEdit() {
+    if (isProfileEditMode) {
+        cancelProfileEdit();
+    } else {
+        setProfileEditMode(true);
+    }
+}
+
+function cancelProfileEdit() {
+    const nameInput = document.getElementById('profile-name');
+    const contactInput = document.getElementById('profile-contact');
+    const streetInput = document.getElementById('profile-street');
+    if (nameInput) nameInput.value = initialProfileValues.name || '';
+    if (contactInput) contactInput.value = initialProfileValues.contact || '';
+    if (streetInput) streetInput.value = initialProfileValues.street || '';
+
+    setProfileEditMode(false);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('profile-edit-form');
+    if (form) {
+        form.addEventListener('submit', function () {
+            // Re-enable selects right before submit so values are included in POST
+            const selects = form.querySelectorAll('select');
+            selects.forEach(s => s.disabled = false);
+        });
+    }
+
+    @if($errors->any() && !$errors->has('delete_password') && !$errors->has('avatar'))
+        setProfileEditMode(true);
+    @else
+        setProfileEditMode(false);
+    @endif
+
+    {{-- Corner Toast Flash Notifications (Sa Gilid) --}}
+    @if(session('success'))
+        showToast(@json(session('success')));
+    @endif
+    @if(session('error'))
+        showToast(@json(session('error')), true);
+    @endif
+    @if(session('warning'))
+        showToast(@json(session('warning')), true);
+    @endif
+    @if($errors->has('avatar'))
+        showToast(@json($errors->first('avatar')), true);
+    @endif
+});
+
+// --- PHILIPPINE MOBILE NUMBER ENFORCEMENT (Starts with 09, 11 digits max, no letters) ---
+(function () {
+    const phoneInput = document.getElementById('profile-contact');
+    if (!phoneInput) return;
+
+    function sanitizeToPhilippineMobile(val) {
+        if (!val) return '09';
+        let digits = String(val).replace(/\D/g, '');
+        if (!digits) return '09';
+        if (digits.startsWith('639')) {
+            digits = '09' + digits.substring(3);
+        } else if (digits.startsWith('9')) {
+            digits = '09' + digits.substring(1);
+        } else if (!digits.startsWith('09')) {
+            digits = '09' + digits.replace(/^0*/, '');
+        }
+        return digits.slice(0, 11);
+    }
+
+    // Sanitize existing value on load
+    if (phoneInput.value) {
+        phoneInput.value = sanitizeToPhilippineMobile(phoneInput.value);
+    }
+
+    phoneInput.addEventListener('keydown', function (e) {
+        if (!isProfileEditMode || this.readOnly) return;
+
+        // Allow navigation, modifier shortcuts (Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+Z, etc.)
+        const navKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter', 'Home', 'End'];
+        if (navKeys.includes(e.key) || e.ctrlKey || e.metaKey || e.altKey) {
+            return;
+        }
+
+        // Handle Backspace / Delete
+        if (e.key === 'Backspace') {
+            if (this.selectionStart === 0 && this.selectionEnd >= 2) {
+                e.preventDefault();
+                this.value = '09' + this.value.substring(this.selectionEnd);
+                this.setSelectionRange(2, 2);
+                return;
+            }
+            if (this.selectionStart <= 2 && this.selectionEnd <= 2) {
+                e.preventDefault();
+                return;
+            }
+            return;
+        }
+
+        if (e.key === 'Delete') {
+            if (this.selectionStart < 2) {
+                e.preventDefault();
+                return;
+            }
+            return;
+        }
+
+        // Block all non-numeric characters (letters, symbols, spaces)
+        if (!/^[0-9]$/.test(e.key)) {
+            e.preventDefault();
+            return;
+        }
+
+        // Limit to 11 digits
+        const digits = this.value.replace(/\D/g, '');
+        if (digits.length >= 11 && this.selectionStart === this.selectionEnd) {
+            e.preventDefault();
+        }
+    });
+
+    phoneInput.addEventListener('input', function () {
+        if (!isProfileEditMode || this.readOnly) return;
+        const curPos = this.selectionStart;
+        const formatted = sanitizeToPhilippineMobile(this.value);
+        this.value = formatted;
+        if (curPos < 2) {
+            this.setSelectionRange(2, 2);
+        }
+    });
+
+    phoneInput.addEventListener('focus', function () {
+        if (!isProfileEditMode || this.readOnly) return;
+        if (!this.value || this.value.trim() === '' || !this.value.startsWith('09')) {
+            this.value = sanitizeToPhilippineMobile(this.value);
+        }
+        setTimeout(() => {
+            if (this.selectionStart < 2) {
+                this.setSelectionRange(2, 2);
+            }
+        }, 10);
+    });
+
+    phoneInput.addEventListener('paste', function (e) {
+        if (!isProfileEditMode || this.readOnly) return;
+        e.preventDefault();
+        const pasted = (e.clipboardData || window.clipboardData).getData('text') || '';
+        this.value = sanitizeToPhilippineMobile(pasted);
+    });
+})();
+
+(function () {
+    const regionSelect   = document.getElementById('profile-region');
+    const provinceSelect = document.getElementById('profile-province');
+    const citySelect     = document.getElementById('profile-city');
+    const barangaySelect = document.getElementById('profile-barangay');
+
+    const userRegion   = @json(old('region', $user->region));
+    const userProvince = @json(old('province', $user->province));
+    const userCity     = @json(old('city', $user->city));
+    const userBarangay = @json(old('barangay', $user->barangay));
+
+    let currentRegionCode   = null;
+    let currentProvinceCode = null;
+    let currentCityName     = null;
+
+    function buildOptions(list, valueKey, labelKey, placeholder) {
+        let html = `<option value="" disabled selected>${placeholder}</option>`;
+        list.forEach(item => {
+            const val = valueKey ? item[valueKey] : item.name;
+            const lab = labelKey ? item[labelKey] : item.name;
+            html += `<option value="${escapeHtml(val)}">${escapeHtml(lab)}</option>`;
+        });
+        return html;
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = String(str ?? '');
+        return div.innerHTML;
+    }
+
+    function resetSelect(sel, placeholder) {
+        sel.innerHTML = `<option value="" disabled selected>${placeholder}</option>`;
+        sel.disabled = true;
+    }
+
+    async function loadRegions() {
+        try {
+            const res = await fetch('{{ route('api.address.regions') }}');
+            const regions = await res.json();
+            regionSelect.innerHTML = buildOptions(regions, 'code', 'name', 'Select Region');
+            regionSelect.disabled = !isProfileEditMode;
+
+            if (userRegion) {
+                const match = regions.find(r => r.code === userRegion || r.name === userRegion);
+                const code = match ? match.code : userRegion;
+                regionSelect.value = code;
+                currentRegionCode = code;
+                if (code) await loadProvinces(code, userProvince);
+            }
+        } catch (err) {
+            console.error('Failed to load regions:', err);
+        }
+    }
+
+    async function loadProvinces(regionCode, preselectProvince) {
+        resetSelect(provinceSelect, 'Select Province');
+        resetSelect(citySelect, 'Select City');
+        resetSelect(barangaySelect, 'Select Barangay');
+
+        currentRegionCode = regionCode;
+        currentProvinceCode = null;
+        currentCityName = null;
+
+        try {
+            const res = await fetch(`{{ url('/') }}/api/address/regions/${encodeURIComponent(regionCode)}/provinces`);
+            const provinces = await res.json();
+            provinceSelect.innerHTML = buildOptions(provinces, 'code', 'name', 'Select Province');
+            provinceSelect.disabled = !isProfileEditMode;
+
+            if (preselectProvince) {
+                const match = provinces.find(p => p.code === preselectProvince || p.name === preselectProvince);
+                const code = match ? match.code : preselectProvince;
+                provinceSelect.value = code;
+                currentProvinceCode = code;
+                if (code) await loadCities(regionCode, code, userCity);
+            }
+        } catch (err) {
+            console.error('Failed to load provinces:', err);
+        }
+    }
+
+    async function loadCities(regionCode, provinceCode, preselectCity) {
+        resetSelect(citySelect, 'Select City');
+        resetSelect(barangaySelect, 'Select Barangay');
+
+        currentProvinceCode = provinceCode;
+        currentCityName = null;
+
+        try {
+            const res = await fetch(`{{ url('/') }}/api/address/regions/${encodeURIComponent(regionCode)}/provinces/${encodeURIComponent(provinceCode)}/cities`);
+            const cities = await res.json();
+            citySelect.innerHTML = buildOptions(cities, null, 'name', 'Select City / Municipality');
+            citySelect.disabled = !isProfileEditMode;
+
+            if (preselectCity) {
+                const match = cities.find(c => c.name === preselectCity);
+                const name = match ? match.name : preselectCity;
+                citySelect.value = name;
+                currentCityName = name;
+                if (name) await loadBarangays(regionCode, provinceCode, name, userBarangay);
+            }
+        } catch (err) {
+            console.error('Failed to load cities:', err);
+        }
+    }
+
+    async function loadBarangays(regionCode, provinceCode, cityName, preselectBarangay) {
+        resetSelect(barangaySelect, 'Select Barangay');
+        currentCityName = cityName;
+
+        try {
+            const res = await fetch(`{{ url('/') }}/api/address/regions/${encodeURIComponent(regionCode)}/provinces/${encodeURIComponent(provinceCode)}/cities/${encodeURIComponent(cityName)}/barangays`);
+            const barangays = await res.json();
+            barangaySelect.innerHTML = buildOptions(barangays, null, 'name', 'Select Barangay');
+            barangaySelect.disabled = !isProfileEditMode;
+
+            if (preselectBarangay) {
+                const match = barangays.find(b => b.name === preselectBarangay);
+                barangaySelect.value = match ? match.name : preselectBarangay;
+            }
+        } catch (err) {
+            console.error('Failed to load barangays:', err);
+        }
+    }
+
+    regionSelect.addEventListener('change', function () {
+        if (this.value) loadProvinces(this.value, null);
+    });
+
+    provinceSelect.addEventListener('change', function () {
+        if (this.value && currentRegionCode) loadCities(currentRegionCode, this.value, null);
+    });
+
+    citySelect.addEventListener('change', function () {
+        if (this.value && currentRegionCode && currentProvinceCode) {
+            loadBarangays(currentRegionCode, currentProvinceCode, this.value, null);
+        }
+    });
+
+    loadRegions();
+})();
+
+// --- AVATAR UPLOAD & REMOVAL SYSTEM ---
+(function () {
+    const avatarTrigger = document.getElementById('avatar-container-trigger');
+    const uploadBtn     = document.getElementById('btn-trigger-upload');
+    const removeBtn     = document.getElementById('btn-trigger-remove');
+    const fileInput     = document.getElementById('avatar-file-input');
+    const spinner       = document.getElementById('avatar-upload-spinner');
+    const circleDisplay = document.getElementById('avatar-circle-display');
+
+    function openFilePicker() {
+        if (fileInput) fileInput.click();
+    }
+
+    if (avatarTrigger) {
+        avatarTrigger.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (!isProfileEditMode) return;
+            openFilePicker();
+        });
+    }
+
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            openFilePicker();
+        });
+    }
+
+    if (fileInput) {
+        fileInput.addEventListener('change', async function () {
+            const file = this.files && this.files[0];
+            if (!file) return;
+
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                showToast('Please select a valid image file (JPG, PNG, WebP, or GIF).', true);
+                this.value = '';
+                return;
+            }
+
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Image size must be less than 5MB.', true);
+                this.value = '';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('avatar', file);
+            formData.append('_token', '{{ csrf_token() }}');
+
+            // Show spinner
+            if (spinner) spinner.style.display = 'flex';
+
+            try {
+                const response = await fetch('{{ route('customer.profile.avatar.update') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    let img = document.getElementById('avatar-img-element');
+                    const initials = document.getElementById('avatar-initials-element');
+
+                    if (initials) initials.remove();
+
+                    if (!img) {
+                        img = document.createElement('img');
+                        img.id = 'avatar-img-element';
+                        img.className = 'user-avatar-img';
+                        img.alt = '{{ $user->name }}';
+                        circleDisplay.insertBefore(img, circleDisplay.firstChild);
+                    }
+
+                    img.src = data.avatar_url + '?t=' + new Date().getTime();
+
+                    if (removeBtn && isProfileEditMode) removeBtn.style.display = 'inline-flex';
+                    showToast(data.message || 'Profile picture updated successfully!');
+                } else {
+                    const errMsg = data.message || (data.errors && data.errors.avatar ? data.errors.avatar[0] : 'Failed to upload photo.');
+                    showToast(errMsg, true);
+                }
+            } catch (err) {
+                console.error('Avatar upload error:', err);
+                showToast('An unexpected error occurred while uploading. Please try again.', true);
+            } finally {
+                if (spinner) spinner.style.display = 'none';
+                fileInput.value = '';
+            }
+        });
+    }
+
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            openDeleteAvatarModal();
+        });
+    }
+
+    const confirmDeleteAvatarBtn = document.getElementById('btn-confirm-delete-avatar');
+    if (confirmDeleteAvatarBtn) {
+        confirmDeleteAvatarBtn.addEventListener('click', async function () {
+            closeDeleteAvatarModal();
+            if (spinner) spinner.style.display = 'flex';
+
+            try {
+                const response = await fetch('{{ route('customer.profile.avatar.delete') }}', {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    const img = document.getElementById('avatar-img-element');
+                    if (img) img.remove();
+
+                    let initials = document.getElementById('avatar-initials-element');
+                    if (!initials) {
+                        initials = document.createElement('span');
+                        initials.id = 'avatar-initials-element';
+                        initials.textContent = data.initials || '{{ strtoupper(substr($user->name, 0, 1)) }}';
+                        circleDisplay.insertBefore(initials, circleDisplay.firstChild);
+                    }
+
+                    if (removeBtn) removeBtn.style.display = 'none';
+                    showToast(data.message || 'Profile picture removed.');
+                } else {
+                    showToast(data.message || 'Failed to remove photo.', true);
+                }
+            } catch (err) {
+                console.error('Avatar delete error:', err);
+                showToast('An unexpected error occurred. Please try again.', true);
+            } finally {
+                if (spinner) spinner.style.display = 'none';
+            }
+        });
+    }
+})();
+</script>
+@endpush
+@endsection

@@ -1,0 +1,3932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="csrf-token" content="KzVZda70uWztDrhhi7jpjvtiFwbsulUkwB93EGzh">
+    <title>Customer Dashboard - Grafika South</title>
+
+    <link rel="icon" type="image/png" href="http://127.0.0.1:8123/images/favicon.png">
+    <link rel="apple-touch-icon" type="image/png" href="http://127.0.0.1:8123/images/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="http://127.0.0.1:8123/images/favicon.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind CSS (Preflight Disabled to preserve existing custom styles) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            corePlugins: {
+                preflight: false,
+            },
+            theme: {
+                extend: {
+                    // Neutral scales resolve to the theme tokens so utility
+                    // markup (bg-gray-50, text-slate-400, border-slate-200)
+                    // themes together with the rest of the UI.
+                    // 900/950 stay literal - they are used as dark backdrops.
+                    colors: {
+                        slate: {
+                            50: 'var(--bg-surface-2)',
+                            100: 'var(--bg-subtle)',
+                            200: 'var(--border-color)',
+                            300: 'var(--border-strong)',
+                            400: 'var(--text-subtle)',
+                            500: 'var(--text-muted)',
+                            600: 'var(--text-muted)',
+                            700: 'var(--text-main)',
+                            800: 'var(--text-main)',
+                        },
+                        gray: {
+                            50: 'var(--bg-surface-2)',
+                            100: 'var(--bg-subtle)',
+                            200: 'var(--border-color)',
+                            300: 'var(--border-strong)',
+                            400: 'var(--text-subtle)',
+                            500: 'var(--text-muted)',
+                            600: 'var(--text-muted)',
+                            700: 'var(--text-main)',
+                            800: 'var(--text-main)',
+                        },
+                    },
+                },
+            },
+        }
+    </script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    
+    <script>
+    (function () {
+        var root = document.documentElement;
+        var STORAGE_KEY = 'grafika-theme';
+        var mql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+        function readStored() {
+            try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
+        }
+
+        function syncToggles(dark) {
+            var buttons = document.querySelectorAll('[data-theme-toggle]');
+            for (var i = 0; i < buttons.length; i++) {
+                var label = dark ? 'Switch to light theme' : 'Switch to dark theme';
+                buttons[i].setAttribute('aria-pressed', dark ? 'true' : 'false');
+                buttons[i].setAttribute('aria-label', label);
+                buttons[i].setAttribute('title', label);
+            }
+        }
+
+        function apply(mode) {
+            var dark = mode === 'dark';
+            root.classList.toggle('theme-dark', dark);
+            root.style.colorScheme = dark ? 'dark' : 'light';
+            syncToggles(dark);
+        }
+
+        // 1) Resolve the mode BEFORE first paint (no flash of the wrong theme).
+        var stored = readStored();
+        var prefersDark = mql ? mql.matches : false;
+        apply(stored === 'dark' || (stored !== 'light' && prefersDark) ? 'dark' : 'light');
+
+        // 1b) This script runs in <head>, before the toggle buttons exist.
+        //     Re-sync their ARIA state once the DOM is parsed.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () {
+                syncToggles(root.classList.contains('theme-dark'));
+            });
+        } else {
+            syncToggles(root.classList.contains('theme-dark'));
+        }
+
+        // 2) Toggle handler — delegated so it covers every button instance.
+        document.addEventListener('click', function (e) {
+            var button = e.target.closest ? e.target.closest('[data-theme-toggle]') : null;
+            if (!button) return;
+            var next = root.classList.contains('theme-dark') ? 'light' : 'dark';
+            apply(next);
+            try { localStorage.setItem(STORAGE_KEY, next); } catch (err) {}
+        });
+
+        // 3) Follow the OS preference only while the user has not chosen explicitly.
+        if (mql && mql.addEventListener) {
+            mql.addEventListener('change', function (e) {
+                if (!readStored()) apply(e.matches ? 'dark' : 'light');
+            });
+        }
+    })();
+</script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+
+        /* ============================================================
+           DESIGN TOKENS — 3 layers: primitive → semantic → component
+           Layer 1 primitives are raw values and never change per theme.
+           ============================================================ */
+        :root {
+            /* ---- Legacy CMYK aliases (kept: other views still use them) ---- */
+            --cmyk-cyan: #0099FF;
+            --cmyk-cyan-hover: #0080FF;
+            --cmyk-cyan-light: #E6F4FF;
+
+            --cmyk-magenta: #EC008C;
+            --cmyk-magenta-hover: #C80075;
+            --cmyk-magenta-light: #FDE8F5;
+
+            --cmyk-yellow: #EAB308;
+            --cmyk-yellow-dark: #CA8A04;
+            --cmyk-yellow-light: #FEF9C3;
+
+            --cmyk-key: #0F172A;
+            --cmyk-key-light: #1E293B;
+        }
+
+        :root {
+    /* ---- Layer 1: PRIMITIVES (raw values) ---- */
+    --p-white: #FFFFFF;
+
+    --p-ink-950: #0B1120;
+    --p-ink-900: #0F172A;
+    --p-ink-850: #172033;
+    --p-ink-800: #1E293B;
+    --p-ink-700: #334155;
+    --p-ink-600: #475569;
+    --p-ink-500: #64748B;
+    --p-ink-400: #94A3B8;
+    --p-ink-300: #CBD5E1;
+    --p-ink-200: #E2E8F0;
+    --p-ink-100: #F1F5F9;
+    --p-ink-050: #F8FAFC;
+
+    --p-cyan-050: #E6F4FF;
+    --p-cyan-100: #BAE6FD;
+    --p-cyan-300: #7DD3FC;
+    --p-cyan-400: #38BDF8;
+    --p-cyan-500: #0099FF;
+    --p-cyan-600: #0080FF;
+
+    --p-magenta-050: #FDE8F5;
+    --p-magenta-100: #FBCFE8;
+    --p-magenta-400: #F472B6;
+    --p-magenta-500: #EC008C;
+    --p-magenta-600: #C80075;
+
+    --p-yellow-050: #FEF9C3;
+    --p-yellow-100: #FDE047;
+    --p-yellow-500: #EAB308;
+    --p-yellow-600: #CA8A04;
+
+    --p-violet-050: #F5F3FF;
+    --p-violet-100: #DDD6FE;
+    --p-violet-500: #7C3AED;
+    --p-violet-600: #6D28D9;
+
+    --p-green-050: #F0FDF4;
+    --p-green-100: #BBF7D0;
+    --p-green-500: #22C55E;
+    --p-green-600: #16A34A;
+    --p-green-700: #15803D;
+    --p-green-800: #14532D;
+
+    --p-red-050: #FEF2F2;
+    --p-red-100: #FEE2E2;
+    --p-red-500: #EF4444;
+    --p-red-600: #DC2626;
+    --p-red-700: #B91C1C;
+    --p-red-800: #991B1B;
+
+    --p-amber-050: #FEF3C7;
+    --p-amber-100: #FDE68A;
+    --p-amber-500: #F59E0B;
+    --p-amber-600: #D97706;
+    --p-amber-700: #B45309;
+    --p-amber-800: #92400E;
+
+    --p-orange-050: #FFF7ED;
+    --p-orange-100: #FED7AA;
+    --p-orange-500: #EA580C;
+    --p-orange-600: #C2410C;
+    --p-orange-700: #9A3412;
+
+    --p-gray-050: #F9FAFB;
+    --p-gray-100: #F3F4F6;
+    --p-gray-200: #E5E7EB;
+    --p-gray-300: #D1D5DB;
+    --p-gray-400: #9CA3AF;
+    --p-gray-500: #6B7280;
+    --p-gray-600: #4B5563;
+    --p-gray-700: #374151;
+    --p-gray-800: #1F2937;
+    --p-gray-900: #111827;
+
+    /* ---- Layer 2: SEMANTIC (light theme is the default) ---- */
+    --accent-light: var(--p-cyan-050);
+    --primary-dark: var(--cmyk-key);
+
+    --bg-page: var(--p-ink-050);
+    --bg-surface: var(--p-white);
+    --bg-surface-2: #FBFCFD;
+    --bg-subtle: var(--p-ink-100);
+    --bg-stripe: var(--p-ink-050);
+    --bg-elevated: var(--p-white);
+    --bg-inverse: var(--p-ink-900);
+    --bg-overlay: rgba(15, 23, 42, 0.5);
+
+    --text-main: var(--p-ink-900);
+    --text-muted: var(--p-ink-500);
+    --text-subtle: var(--p-ink-400);
+    --text-disabled: var(--p-ink-300);
+    --text-inverse: var(--p-white);
+    --text-accent: var(--p-cyan-600);
+    --text-success: var(--p-green-700);
+    --text-warning: var(--p-amber-700);
+    --text-danger: var(--p-red-700);
+    --text-magenta: var(--p-magenta-600);
+    --text-violet: var(--p-violet-600);
+
+    --border-color: var(--p-ink-200);
+    --border-strong: var(--p-ink-300);
+    --border-accent: var(--p-cyan-500);
+
+    --accent-color: var(--p-cyan-500);
+    --accent-hover: var(--p-cyan-600);
+    --accent-soft: var(--p-cyan-050);
+    --accent-contrast: var(--p-white);
+    --accent-ring: rgba(0, 153, 255, 0.35);
+
+    --success-color: var(--p-green-600);
+    --success-soft: var(--p-green-050);
+    --success-border: var(--p-green-100);
+
+    --warning-color: var(--p-amber-600);
+    --warning-soft: var(--p-amber-050);
+    --warning-border: var(--p-amber-100);
+
+    --danger-color: var(--p-red-600);
+    --danger-soft: var(--p-red-050);
+    --danger-border: var(--p-red-100);
+
+    --info-color: var(--p-cyan-600);
+    --info-soft: var(--p-cyan-050);
+    --info-border: var(--p-cyan-100);
+
+    --brand-cyan-fg: var(--p-cyan-500);
+    --brand-cyan-soft: var(--p-cyan-050);
+    --brand-magenta-fg: var(--p-magenta-500);
+    --brand-magenta-soft: var(--p-magenta-050);
+    --brand-yellow-fg: var(--p-yellow-600);
+    --brand-yellow-soft: var(--p-yellow-050);
+    --brand-violet-fg: var(--p-violet-500);
+    --brand-violet-soft: var(--p-violet-050);
+    --brand-key-fg: var(--p-ink-800);
+
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 4px 12px -4px rgba(15, 23, 42, 0.10);
+    --shadow-lg: 0 16px 40px -16px rgba(15, 23, 42, 0.18);
+
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-pill: 9999px;
+
+    /* ---- Layer 3: COMPONENT ---- */
+    --btn-primary-bg: var(--accent-color);
+    --btn-primary-bg-hover: var(--accent-hover);
+    --btn-primary-text: var(--accent-contrast);
+    --btn-outline-border: var(--border-strong);
+    --btn-outline-text: var(--text-main);
+    --btn-outline-bg-hover: var(--bg-subtle);
+    --btn-ghost-text: var(--text-main);
+    --btn-ghost-bg-hover: var(--bg-subtle);
+
+    --card-bg: var(--bg-surface);
+    --card-border: var(--border-color);
+    --card-shadow: var(--shadow-sm);
+    --card-shadow-hover: var(--shadow-md);
+
+    /* Header chrome. The storefront header is a glass layer, the admin
+       topbar is opaque — they share the same colour language. */
+    --header-bg: rgba(255, 255, 255, 0.88);
+    --header-solid: var(--p-white);
+    --header-border: var(--border-color);
+    --header-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.07);
+    --header-text: var(--text-main);
+    --header-text-muted: var(--text-muted);
+    --header-hover-bg: var(--bg-subtle);
+    --header-active-bg: var(--accent-soft);
+    --header-control-bg: var(--bg-surface);
+    --header-control-border: var(--border-strong);
+    --header-control-text: var(--text-muted);
+    --header-brand-chip: transparent;
+
+    --input-bg: var(--bg-surface);
+    --input-border: var(--border-strong);
+    --input-text: var(--text-main);
+    --input-placeholder: var(--p-ink-400);
+
+    --focus-ring: 0 0 0 3px var(--accent-ring);
+}
+
+/* ---- Layer 2 overrides: DARK theme ---- */
+html.theme-dark {
+    --bg-page: #080D18;
+    --bg-surface: #0E1626;
+    --bg-surface-2: #131D31;
+    --bg-subtle: #18233A;
+    --bg-stripe: #131D31;
+    --bg-elevated: #16223A;
+    --bg-inverse: var(--p-white);
+    --bg-overlay: rgba(2, 6, 16, 0.68);
+
+    /* The key black was a foreground colour; on a dark surface it has to
+       become the light text colour instead. */
+    --primary-dark: var(--text-main);
+
+    --text-main: #E6EDF7;
+    --text-muted: #94A3B8;
+    --text-subtle: #64748B;
+    --text-disabled: #475569;
+    --text-inverse: var(--p-ink-900);
+    --text-accent: var(--p-cyan-400);
+    --text-success: #4ADE80;
+    --text-warning: #FBBF24;
+    --text-danger: #F87171;
+    --text-magenta: #F472B6;
+    --text-violet: #A78BFA;
+
+    --border-color: #1E293B;
+    --border-strong: #334155;
+    --border-accent: var(--p-cyan-400);
+
+    --accent-color: var(--p-cyan-400);
+    --accent-hover: var(--p-cyan-500);
+    --accent-soft: rgba(56, 189, 248, 0.12);
+    --accent-contrast: #04121F;
+    --accent-ring: rgba(56, 189, 248, 0.45);
+
+    --success-color: #4ADE80;
+    --success-soft: rgba(34, 197, 94, 0.14);
+    --success-border: rgba(34, 197, 94, 0.32);
+
+    --warning-color: #FBBF24;
+    --warning-soft: rgba(245, 158, 11, 0.14);
+    --warning-border: rgba(245, 158, 11, 0.32);
+
+    --danger-color: #F87171;
+    --danger-soft: rgba(239, 68, 68, 0.14);
+    --danger-border: rgba(239, 68, 68, 0.32);
+
+    --info-color: var(--p-cyan-400);
+    --info-soft: rgba(56, 189, 248, 0.12);
+    --info-border: rgba(56, 189, 248, 0.3);
+
+    /* Soft brand tints become translucent so CMYK chips do not glare on dark. */
+    --p-cyan-050: rgba(56, 189, 248, 0.14);
+    --p-cyan-100: rgba(56, 189, 248, 0.26);
+    --p-magenta-050: rgba(236, 0, 140, 0.16);
+    --p-magenta-100: rgba(236, 0, 140, 0.28);
+    --p-yellow-050: rgba(234, 179, 8, 0.16);
+    --p-yellow-100: rgba(234, 179, 8, 0.28);
+    --p-violet-050: rgba(124, 58, 237, 0.16);
+    --p-violet-100: rgba(124, 58, 237, 0.28);
+    --p-green-050: rgba(34, 197, 94, 0.14);
+    --p-green-100: rgba(34, 197, 94, 0.28);
+    --p-red-050: rgba(239, 68, 68, 0.14);
+    --p-red-100: rgba(239, 68, 68, 0.28);
+    --p-amber-050: rgba(245, 158, 11, 0.14);
+    --p-amber-100: rgba(245, 158, 11, 0.28);
+    --p-orange-050: rgba(234, 88, 12, 0.14);
+    --p-orange-100: rgba(234, 88, 12, 0.28);
+
+    --brand-cyan-fg: var(--p-cyan-400);
+    --brand-cyan-soft: rgba(56, 189, 248, 0.12);
+    --brand-magenta-fg: #F472B6;
+    --brand-magenta-soft: rgba(236, 0, 140, 0.16);
+    --brand-yellow-fg: var(--p-yellow-500);
+    --brand-yellow-soft: rgba(234, 179, 8, 0.16);
+    --brand-violet-fg: #A78BFA;
+    --brand-violet-soft: rgba(124, 58, 237, 0.16);
+    --brand-key-fg: var(--p-ink-300);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40);
+    --shadow-md: 0 4px 14px -4px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 18px 44px -18px rgba(0, 0, 0, 0.70);
+
+    /* Dark header is a deep brand blue rather than near-black, so the chrome
+       reads as blue while keeping white text at ~8.5:1. */
+    --header-bg: rgba(12, 74, 110, 0.92);
+    --header-solid: #0C4A6E;
+    --header-border: rgba(255, 255, 255, 0.16);
+    --header-shadow: 0 4px 20px -2px rgba(3, 20, 36, 0.55);
+    --header-text: #FFFFFF;
+    --header-text-muted: rgba(255, 255, 255, 0.78);
+    --header-hover-bg: rgba(255, 255, 255, 0.16);
+    --header-active-bg: rgba(255, 255, 255, 0.22);
+    --header-control-bg: rgba(255, 255, 255, 0.12);
+    --header-control-border: rgba(255, 255, 255, 0.26);
+    --header-control-text: rgba(255, 255, 255, 0.9);
+    --header-brand-chip: #FFFFFF;
+
+    --input-placeholder: #64748B;
+}
+
+/* ---- Global focus ring (visible for keyboard navigation) ---- */
+:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* ============================================================
+   Tailwind colour-utility overrides
+   The Tailwind CDN injects literal colours, which would ignore the
+   token layer. These re-point the remaining surface utilities at the
+   theme tokens so utility markup themes with everything else.
+   ============================================================ */
+html.theme-dark .bg-white { background-color: var(--bg-surface); }
+html.theme-dark .border-black { border-color: var(--border-strong); }
+html.theme-dark .bg-gray-50 { background-color: var(--bg-surface-2); }
+html.theme-dark .bg-slate-50 { background-color: var(--bg-surface-2); }
+html.theme-dark .bg-sky-50 { background-color: var(--accent-soft); }
+html.theme-dark .bg-rose-50 { background-color: var(--danger-soft); }
+html.theme-dark .bg-emerald-50 { background-color: var(--success-soft); }
+html.theme-dark .bg-amber-50 { background-color: var(--warning-soft); }
+html.theme-dark .border-sky-200 { border-color: var(--info-border); }
+html.theme-dark .border-rose-200 { border-color: var(--danger-border); }
+html.theme-dark .border-emerald-200 { border-color: var(--success-border); }
+html.theme-dark .border-amber-200 { border-color: var(--warning-border); }
+html.theme-dark .text-sky-600, html.theme-dark .text-sky-700 { color: var(--accent-color); }
+html.theme-dark .text-sky-800, html.theme-dark .text-sky-900 { color: var(--accent-hover); }
+html.theme-dark .text-rose-600, html.theme-dark .text-rose-700, html.theme-dark .text-rose-800 { color: var(--text-danger); }
+html.theme-dark .text-emerald-600, html.theme-dark .text-emerald-700, html.theme-dark .text-emerald-800 { color: var(--text-success); }
+html.theme-dark .text-amber-600, html.theme-dark .text-amber-700, html.theme-dark .text-amber-800 { color: var(--text-warning); }
+html.theme-dark .text-red-600, html.theme-dark .text-red-700, html.theme-dark .text-red-800 { color: var(--text-danger); }
+
+/* ===== Theme toggle button (partials.theme-toggle) ===== */
+.theme-toggle {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-strong);
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.theme-toggle:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent-color);
+    color: var(--accent-hover);
+}
+.theme-toggle__icons {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+.theme-toggle__icon {
+    position: absolute;
+    inset: 0;
+    width: 20px;
+    height: 20px;
+    transition: opacity 0.2s ease, transform 0.25s ease;
+}
+/* Light theme shows the moon (the action is "go dark"); dark theme shows the sun. */
+.theme-toggle__icon--moon { opacity: 1; transform: scale(1) rotate(0); }
+.theme-toggle__icon--sun  { opacity: 0; transform: scale(0.6) rotate(-30deg); }
+html.theme-dark .theme-toggle__icon--moon { opacity: 0; transform: scale(0.6) rotate(30deg); }
+html.theme-dark .theme-toggle__icon--sun  { opacity: 1; transform: scale(1) rotate(0); }
+
+/* Drawer variant — a full-width labelled row */
+.theme-toggle--drawer {
+    width: 100%;
+    height: 44px;
+    justify-content: flex-start;
+    gap: 0.85rem;
+    padding: 0 0.95rem;
+    background: transparent;
+    border-color: var(--border-color);
+}
+.theme-toggle--drawer .theme-toggle__label {
+    font-size: 0.94rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+        html {
+            overflow-x: clip; /* clip prevents scrollbar but does NOT break position:sticky (unlike overflow:hidden) */
+            max-width: 100vw;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: clip; /* clip instead of hidden — preserves sticky positioning on child elements */
+        }
+
+        h1, h2, h3, h4, h5, h6 { font-family: 'Outfit', sans-serif; }
+
+        /* CMYK 4-Process Strip Bar */
+        .cmyk-process-strip {
+            display: flex;
+            height: 5px;
+            width: 100%;
+        }
+        .cmyk-strip-c { flex: 1; background-color: var(--cmyk-cyan); }
+        .cmyk-strip-m { flex: 1; background-color: var(--cmyk-magenta); }
+        .cmyk-strip-y { flex: 1; background-color: var(--cmyk-yellow); }
+        .cmyk-strip-k { flex: 1; background-color: var(--cmyk-key); }
+
+        .top-promo-bar {
+            background-color: var(--bg-inverse);
+            color: var(--text-inverse);
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 0.45rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        @media (min-width: 640px) {
+            .top-promo-bar { padding: 0.45rem 2rem; }
+        }
+        @media (min-width: 1280px) {
+            .top-promo-bar { padding: 0.45rem 3rem; }
+        }
+
+        .top-promo-text {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0 auto;
+        }
+
+        /* Sticky Site Header */
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: var(--header-bg);
+            backdrop-filter: saturate(180%) blur(12px);
+            -webkit-backdrop-filter: saturate(180%) blur(12px);
+            box-shadow: var(--header-shadow);
+            width: 100%;
+            transition: box-shadow 0.25s ease, background-color 0.25s ease;
+        }
+
+        /* Header-scoped colour language. In dark mode the header is a deep
+           brand blue, so its contents need their own light-on-blue palette
+           rather than the page's text tokens. */
+        .site-header .navbar-brand { color: var(--header-text); }
+        .site-header .nav-link-item { color: var(--header-text-muted); }
+        .site-header .nav-link-item i { color: var(--header-text-muted); }
+        .site-header .nav-link-item:hover {
+            background-color: var(--header-hover-bg);
+            color: var(--header-text);
+        }
+        .site-header .nav-link-item:hover i { color: var(--header-text); }
+        .site-header .nav-link-item.active {
+            background-color: var(--header-active-bg);
+            color: var(--header-text);
+        }
+        .site-header .nav-link-item.active i { color: var(--header-text); }
+        .site-header .nav-divider { background-color: var(--header-border); }
+        .site-header .mobile-nav-btn {
+            background: var(--header-control-bg);
+            border-color: var(--header-control-border);
+            color: var(--header-control-text);
+        }
+        .site-header .mobile-nav-btn:hover {
+            background: var(--header-hover-bg);
+            border-color: var(--header-control-border);
+            color: var(--header-text);
+        }
+        .site-header .theme-toggle {
+            background: var(--header-control-bg);
+            border-color: var(--header-control-border);
+            color: var(--header-control-text);
+        }
+        .site-header .theme-toggle:hover {
+            background: var(--header-hover-bg);
+            border-color: var(--header-control-border);
+            color: var(--header-text);
+        }
+        /* The wordmark is an opaque JPG, so on a blue header it needs a chip. */
+        .site-header .navbar-brand img {
+            background: var(--header-brand-chip);
+            border-radius: 9px;
+            box-sizing: content-box;
+            padding: 0;
+            transition: background-color 0.25s ease, box-shadow 0.25s ease;
+        }
+        html.theme-dark .site-header .navbar-brand img {
+            padding: 4px 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+        }
+
+        .navbar {
+            background-color: transparent;
+            border-bottom: 1px solid var(--header-border);
+            padding: 0 1.5rem;
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            max-width: 1680px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        @media (min-width: 640px) {
+            .navbar { padding: 0 2rem; }
+        }
+        @media (min-width: 1280px) {
+            .navbar { padding: 0 3rem; }
+        }
+
+        /* Mobile Header Breakpoint (< md: 768px) */
+        @media (max-width: 767.98px) {
+            .navbar {
+                padding: 0 1rem !important;
+                height: 60px !important;
+                flex-wrap: nowrap !important;
+            }
+            .desktop-nav-group {
+                display: none !important;
+            }
+            .mobile-nav-actions {
+                display: flex !important;
+            }
+        }
+
+        .navbar-brand {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-main);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            letter-spacing: -0.5px;
+            flex-shrink: 0;
+        }
+
+        .navbar-brand img {
+            height: 34px;
+            max-height: 34px;
+            width: auto;
+            max-width: 160px;
+            object-fit: contain;
+            transition: height 0.2s ease, max-width 0.2s ease;
+        }
+
+        @media (max-width: 767.98px) {
+            .navbar-brand img {
+                height: 32px !important;
+                max-height: 32px !important;
+                max-width: 145px !important;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .navbar-brand img {
+                height: 28px !important;
+                max-height: 28px !important;
+                max-width: 120px !important;
+            }
+        }
+
+        /* Very narrow phones (320px): shrink the wordmark and tighten the action
+           gap so the mobile nav actions are never clipped off-screen. */
+        @media (max-width: 359.98px) {
+            .navbar-brand img {
+                height: 24px !important;
+                max-height: 24px !important;
+                max-width: 88px !important;
+            }
+            .mobile-nav-actions {
+                gap: 0.3rem;
+            }
+        }
+
+        /* Mobile Navigation Icons & Hamburger Button */
+        .mobile-nav-actions {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .mobile-nav-btn {
+            background: var(--bg-surface);
+            border: 1.5px solid var(--border-strong);
+            color: var(--text-muted);
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05rem;
+            cursor: pointer;
+            text-decoration: none;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .mobile-nav-btn:hover, .mobile-nav-btn:active {
+            background: var(--accent-soft);
+            border-color: var(--accent-color);
+            color: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .mobile-cart-btn .nav-cart-badge {
+            position: absolute;
+            top: -5px;
+            right: -6px;
+            font-size: 0.68rem;
+            height: 18px;
+            min-width: 18px;
+            padding: 0 4px;
+        }
+
+        /* Slide-out Mobile Navigation Drawer & Backdrop */
+        .mobile-drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5); /* bg-black/50 */
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .mobile-drawer-overlay.is-open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .mobile-nav-drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 20rem; /* w-80 (320px) */
+            max-width: 85vw; /* max-w-[85vw] */
+            height: 100vh;
+            height: 100dvh;
+            background: var(--bg-surface);
+            z-index: 10001;
+            box-shadow: -8px 0 32px rgba(15, 23, 42, 0.2);
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .mobile-nav-drawer.is-open {
+            transform: translateX(0);
+        }
+
+        .mobile-drawer-header {
+            padding: 1.1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-surface);
+            flex-shrink: 0;
+        }
+
+        .mobile-drawer-close {
+            width: 36px;
+            height: 36px;
+            border-radius: 9px;
+            border: 1.5px solid var(--border-strong);
+            background: var(--bg-subtle);
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .mobile-drawer-close:hover {
+            background: var(--danger-soft);
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        .mobile-drawer-back {
+            width: 36px;
+            height: 36px;
+            border-radius: 9px;
+            border: 1.5px solid var(--border-strong);
+            background: var(--bg-subtle);
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .mobile-drawer-back:hover {
+            background: var(--accent-soft);
+            color: var(--accent-hover);
+            border-color: var(--accent-color);
+        }
+
+        .mobile-drawer-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.25rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .mobile-drawer-link {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 0.75rem 0.95rem;
+            border-radius: 10px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.94rem;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .mobile-drawer-link i {
+            width: 1.25rem;
+            text-align: center;
+            font-size: 1rem;
+            color: var(--text-subtle);
+            transition: color 0.2s ease;
+        }
+
+        .mobile-drawer-link:hover, .mobile-drawer-link.active {
+            background: var(--accent-soft);
+            color: var(--accent-hover);
+            font-weight: 700;
+        }
+
+        .mobile-drawer-link:hover i, .mobile-drawer-link.active i {
+            color: var(--accent-hover);
+        }
+
+        .mobile-drawer-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 0.6rem 0.5rem;
+        }
+
+        .mobile-drawer-user-card {
+            background: var(--bg-surface-2);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.85rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .mobile-drawer-user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .mobile-drawer-user-name {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mobile-drawer-user-email {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mobile-drawer-footer {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-surface-2);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        /* Customer Dashboard Layout - Full Screen on Desktop */
+        .customer-dashboard-layout {
+            width: 100%;
+        }
+        .customer-sidebar, aside.customer-sidebar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            overflow: hidden !important;
+        }
+        .customer-main-content {
+            width: 100% !important;
+            max-width: 100% !important;
+            flex: 1 1 100% !important;
+        }
+        @media (max-width: 767.98px) {
+            .customer-dashboard-layout {
+                flex-direction: column !important;
+                gap: 1.25rem !important;
+            }
+        }
+
+        /* Customer Header Burger Menu Button */
+        .customer-header-burger-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: var(--bg-surface);
+            border: 1.5px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            flex-shrink: 0;
+        }
+
+        .customer-header-burger-btn:hover {
+            background: var(--accent-soft);
+            border-color: var(--accent-color);
+            color: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0, 153, 255, 0.15);
+        }
+
+        .customer-header-burger-btn:active {
+            transform: translateY(0);
+        }
+
+        .customer-header-burger-dot {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--cmyk-magenta);
+            border: 2px solid var(--bg-surface);
+            box-shadow: 0 0 0 1px var(--cmyk-magenta);
+        }
+
+        /* Customer profile picture inside the header menu button */
+        .customer-header-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 9px;
+            object-fit: cover;
+            display: block;
+        }
+        .customer-header-avatar-initial {
+            width: 100%;
+            height: 100%;
+            border-radius: 9px;
+            background: var(--accent-soft);
+            color: var(--accent-hover);
+            font-weight: 800;
+            font-size: 0.95rem;
+            line-height: 38px;
+            text-align: center;
+            display: block;
+        }
+
+        /* Responsive Layout & Container Utility Tokens */
+        .overflow-x-hidden { overflow-x: hidden !important; }
+        @media (max-width: 639.98px) {
+            .container { padding: 0 1rem !important; margin: 1rem auto !important; }
+        }
+
+        .h-10 {
+            height: 2.5rem;
+        }
+
+        .w-auto {
+            width: auto;
+        }
+
+        .object-contain {
+            object-fit: contain;
+        }
+
+        @media (min-width: 768px) {
+            .md\:h-12 {
+                height: 3rem;
+            }
+        }
+
+        .navbar-brand .cmyk-dots {
+            display: inline-flex;
+            gap: 3px;
+            align-items: center;
+        }
+
+        .cmyk-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .dot-c { background-color: var(--cmyk-cyan); }
+        .dot-m { background-color: var(--cmyk-magenta); }
+        .dot-y { background-color: var(--cmyk-yellow); }
+        .dot-k { background-color: var(--cmyk-key); }
+
+        .nav-items-group {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-divider {
+            width: 1px;
+            height: 22px;
+            background-color: var(--border-color);
+            margin: 0 0.35rem;
+        }
+
+        .nav-link-item {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 600;
+            padding: 0.45rem 0.8rem;
+            border-radius: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .nav-link-item i {
+            font-size: 0.92rem;
+            color: var(--text-subtle);
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link-item:hover {
+            background-color: var(--accent-soft);
+            color: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .nav-link-item:hover i {
+            color: var(--accent-hover);
+            transform: scale(1.15);
+        }
+
+        .nav-link-item:active {
+            transform: scale(0.95);
+            background-color: var(--accent-soft);
+            transition: all 0.08s ease;
+        }
+
+        .nav-link-item.active {
+            background-color: var(--accent-soft);
+            color: var(--accent-hover);
+            font-weight: 700;
+        }
+
+        .nav-link-item.active i {
+            color: var(--accent-hover);
+        }
+
+        /* Cart Badge Polish */
+        .nav-cart-badge {
+            background: var(--brand-magenta-fg);
+            color: var(--text-inverse);
+            font-size: 0.72rem;
+            font-weight: 800;
+            min-width: 19px;
+            height: 19px;
+            padding: 0 5px;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            box-shadow: 0 2px 6px rgba(236, 0, 140, 0.35);
+            transition: transform 0.2s ease;
+            margin-left: 2px;
+        }
+
+        .nav-link-item:hover .nav-cart-badge {
+            transform: scale(1.12);
+        }
+
+        /* Profile Thumbnail Polish */
+        .nav-profile-link {
+            padding: 0.3rem 0.75rem 0.3rem 0.45rem;
+            border-radius: 9999px;
+        }
+
+        .nav-profile-thumb {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-color);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-soft);
+            color: var(--text-accent);
+            font-weight: 800;
+            font-size: 0.78rem;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0, 153, 255, 0.2);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .nav-profile-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .nav-link-item:hover .nav-profile-thumb {
+            transform: scale(1.08);
+            border-color: var(--accent-color);
+        }
+
+        .nav-register-btn {
+            padding: 0.45rem 1.1rem;
+            font-size: 0.85rem;
+            border-radius: 9999px;
+            margin-left: 0.35rem;
+            background: var(--accent-color);
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0, 153, 255, 0.25);
+            transition: all 0.2s ease;
+        }
+
+        .nav-register-btn:hover {
+            background: var(--accent-color);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 153, 255, 0.35);
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 0.2rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-super-admin { background-color: var(--cmyk-magenta); color: var(--text-inverse); }
+        .badge-admin { background-color: var(--cmyk-cyan); color: var(--text-inverse); }
+        .badge-customer { background-color: var(--cmyk-yellow-dark); color: var(--text-inverse); }
+
+        .btn-logout {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.4rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-logout:hover {
+            background-color: var(--cmyk-magenta);
+            color: var(--text-inverse);
+            border-color: var(--cmyk-magenta);
+        }
+
+        /* Admin top navigation bar */
+        .admin-topbar {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 2rem;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            gap: 1rem;
+            flex-shrink: 0;
+        }
+
+        .admin-topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+
+        .admin-topbar-brand img {
+            height: 32px;
+            width: auto;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        .admin-topbar-brand-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+        }
+
+        .admin-topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .admin-topbar-badge {
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 0.28rem 0.75rem;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .admin-topbar-user {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            white-space: nowrap;
+        }
+
+        .admin-topbar-divider {
+            width: 1px;
+            height: 22px;
+            background: var(--text-disabled);
+            margin: 0 0.15rem;
+        }
+
+        .admin-topbar-link {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.38rem 0.85rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: all 0.15s;
+            white-space: nowrap;
+            background: var(--bg-surface);
+        }
+
+        .admin-topbar-link:hover {
+            background: var(--bg-page);
+            border-color: var(--border-color);
+            color: var(--text-main);
+        }
+
+        .admin-topbar-link.danger {
+            border-color: transparent;
+            color: var(--text-danger);
+        }
+
+        .admin-topbar-link.danger:hover {
+            background: var(--danger-soft);
+            border-color: var(--danger-border);
+            color: var(--text-danger);
+        }
+
+        /* Admin & Super Admin Left Sidebar Navigation Panel */
+        .admin-portal-layout {
+            display: flex;
+            gap: 0;
+            align-items: flex-start;
+            min-height: calc(100vh - 65px);
+        }
+
+        .admin-sidebar {
+            width: 180px;
+            flex-shrink: 0;
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 65px;
+            height: calc(100vh - 65px);
+            overflow-y: auto;
+            z-index: 40;
+        }
+
+        /* Role / user header */
+        .admin-sidebar-header {
+            padding: 0.7rem 0.85rem 0.6rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .admin-sidebar-header .role-name {
+            font-size: 0.67rem;
+            font-weight: 800;
+            color: var(--text-subtle);
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .admin-sidebar-header .user-name {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+        }
+
+        /* Nav list */
+        .admin-sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.05rem;
+            flex: 1;
+            padding: 0.5rem 0.5rem 0;
+        }
+
+        .admin-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.5rem 0.65rem;
+            border-radius: 8px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.13s ease;
+            border-left: 3px solid transparent;
+            line-height: 1.3;
+        }
+
+        .admin-nav-item i {
+            width: 15px;
+            text-align: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            color: var(--text-subtle);
+            transition: color 0.13s;
+        }
+
+        .admin-nav-item:hover {
+            background: var(--bg-subtle);
+            color: var(--text-main);
+            border-left-color: var(--border-color);
+        }
+
+        .admin-nav-item:hover i { color: var(--text-accent); }
+
+        .admin-nav-item.active {
+            background: var(--accent-soft);
+            color: var(--text-accent);
+            font-weight: 600;
+            border-left-color: var(--accent-color);
+        }
+
+        .admin-nav-item.active i { color: var(--text-accent); }
+
+        .admin-nav-divider {
+            height: 1px;
+            background: var(--bg-subtle);
+            margin: 0.4rem 0.25rem;
+        }
+
+        /* Click-to-toggle dropdown group (Stocks) */
+        .admin-nav-group { position: relative; }
+        .admin-nav-parent .admin-nav-caret {
+            margin-left: auto;
+            font-size: 0.62rem;
+            color: var(--text-subtle);
+            transition: transform 0.15s ease;
+            width: auto;
+        }
+        .admin-nav-submenu {
+            display: none;
+            flex-direction: column;
+            gap: 0.05rem;
+            margin: 0.1rem 0 0 0.65rem;
+            padding-left: 0.55rem;
+            border-left: 2px solid var(--border-color);
+        }
+        /* Click-to-toggle: Stocks parent opens/closes the submenu (kept open while inside a child page) */
+        .admin-nav-group.open .admin-nav-submenu { display: flex; }
+        .admin-nav-group.open .admin-nav-caret { transform: rotate(180deg); }
+        /* Opened parent lights up blue like an active item */
+        .admin-nav-group.open .admin-nav-parent { background: var(--accent-soft); color: var(--text-accent); }
+        .admin-nav-group.open .admin-nav-parent i { color: var(--text-accent); }
+        .admin-nav-group.open .admin-nav-parent.active { background: var(--accent-color); color: var(--text-inverse); }
+        .admin-nav-group.open .admin-nav-parent.active i { color: var(--text-inverse); }
+        .admin-nav-subitem {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.78rem;
+            line-height: 1.3;
+            transition: all 0.13s ease;
+        }
+        .admin-nav-subitem i { width: 13px; font-size: 0.72rem; color: var(--text-subtle); flex-shrink: 0; }
+        .admin-nav-subitem:hover { background: var(--bg-subtle); color: var(--text-main); }
+        .admin-nav-subitem:hover i { color: var(--text-accent); }
+        .admin-nav-subitem.active { background: var(--accent-soft); color: var(--text-accent); }
+        .admin-nav-subitem.active i { color: var(--text-accent); }
+        /* Momentary blue flash when a submenu link is clicked (before navigation) */
+        .admin-nav-subitem.nav-pressed { background: var(--accent-color); color: var(--text-inverse); }
+        .admin-nav-subitem.nav-pressed i { color: var(--text-inverse); }
+
+        .admin-nav-item.logout-item { color: var(--text-danger); }
+        .admin-nav-item.logout-item i { color: var(--text-danger); }
+        .admin-nav-item.logout-item:hover {
+            background: var(--danger-soft);
+            color: var(--text-danger);
+            border-left-color: var(--danger-border);
+        }
+        .admin-nav-item.logout-item:hover i { color: var(--text-danger); }
+
+        .admin-sidebar-logout-wrap {
+            padding: 0.5rem 0.5rem 0.75rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .admin-main-content {
+            flex: 1;
+            min-width: 0;
+            padding: 1.75rem 2rem;
+        }
+
+        @media (max-width: 992px) {
+            .admin-portal-layout { flex-direction: column; min-height: auto; }
+            .admin-sidebar {
+                width: 100%;
+                position: static;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            .admin-main-content { padding: 1.25rem 1rem; }
+        }
+
+        .container {
+            max-width: 1680px;
+            width: 100%;
+            margin: 1.75rem auto;
+            padding: 0 1.5rem;
+            flex: 1;
+        }
+        @media (min-width: 640px) {
+            .container { padding: 0 2rem; }
+        }
+        @media (min-width: 1280px) {
+            .container { padding: 0 3rem; }
+        }
+
+        /* Admin pages: container flush, no top margin, sidebar handles its own padding */
+        .container.admin-container {
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .card {
+            background: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert {
+            padding: 0.9rem 1.2rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1.25rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .alert-success { background-color: var(--accent-soft); color: var(--text-accent); border: 1px solid var(--accent-color); }
+        .alert-error { background-color: var(--brand-magenta-soft); color: var(--brand-magenta-fg); border: 1px solid var(--brand-magenta-fg); }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary { background-color: var(--btn-primary-bg); color: var(--btn-primary-text); }
+        .btn-primary:hover:not(:disabled) { background-color: var(--btn-primary-bg-hover); }
+        .btn:disabled, .btn[disabled] {
+            background-color: var(--p-ink-400) !important;
+            color: var(--p-ink-100) !important;
+            opacity: 0.6;
+            cursor: not-allowed !important;
+            pointer-events: none;
+            box-shadow: none;
+        }
+
+        .btn-magenta { background-color: var(--cmyk-magenta); color: var(--text-inverse); }
+        .btn-magenta:hover { background-color: var(--cmyk-magenta-hover); }
+
+        .btn-yellow { background-color: var(--cmyk-yellow); color: var(--text-main); font-weight: 700; }
+        .btn-yellow:hover { background-color: var(--cmyk-yellow-dark); color: var(--text-inverse); }
+
+        .btn-outline { background-color: var(--bg-surface); color: var(--btn-outline-text); border: 1px solid var(--btn-outline-border); }
+        .btn-outline:hover { border-color: var(--accent-color); color: var(--accent-hover); background: var(--btn-outline-bg-hover); }
+
+        /* Universal Pagination SVG & Layout Reset */
+        nav[role="navigation"] svg,
+        .pagination svg,
+        .pagination-btn svg,
+        .pagination-num svg,
+        svg.w-5.h-5,
+        svg.w-4.h-4 {
+            width: 1.15rem !important;
+            height: 1.15rem !important;
+            max-width: 1.15rem !important;
+            max-height: 1.15rem !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+        }
+
+        .unicorp-footer {
+            background-color: var(--bg-surface);
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
+            padding-top: 3rem;
+            padding-bottom: 1.5rem;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .footer-col h4 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 1rem;
+        }
+
+        .footer-col p {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .footer-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.88rem;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover { color: var(--accent-hover); }
+
+        .footer-bottom {
+            border-top: 1px solid var(--border-color);
+            padding-top: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+
+        /* ── Track & Trace quick modal (light redesign) ── */
+        #trackOrderModal .tt-card {
+            background: var(--bg-surface);
+            border-radius: 18px;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: 0 30px 60px -15px rgba(15,23,42,0.35);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            animation: modalFadeIn 0.2s ease-out;
+        }
+        #trackOrderModal .tt-header {
+            padding: 1.5rem 1.6rem 0.4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.75rem;
+            background: transparent;
+        }
+        #trackOrderModal .tt-header-main { display: flex; align-items: center; gap: 0.75rem; }
+        #trackOrderModal .tt-icon-chip {
+            width: 44px; height: 44px; border-radius: 13px;
+            background: rgba(0,153,255,0.12); color: var(--brand-cyan-fg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25rem; flex: 0 0 auto;
+        }
+        #trackOrderModal .tt-title { font-size: 1.25rem; font-weight: 800; margin: 0; color: var(--text-main); letter-spacing: -0.02em; }
+        #trackOrderModal .tt-subtitle { font-size: 0.82rem; color: var(--text-muted); margin: 3px 0 0 0; }
+        #trackOrderModal .tt-close {
+            background: transparent; border: none; color: var(--text-subtle);
+            width: 34px; height: 34px; border-radius: 9px; font-size: 1.1rem;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background 0.15s, color 0.15s; flex: 0 0 auto;
+        }
+        #trackOrderModal .tt-close:hover { background: var(--bg-surface-2); color: var(--text-main); }
+        #trackOrderModal .tt-body { padding: 1.1rem 1.6rem 1.6rem; }
+        #trackOrderModal .tt-label {
+            font-size: 0.82rem; font-weight: 700; color: var(--text-main);
+            display: block; margin-bottom: 0.5rem;
+        }
+        #trackOrderModal .tt-label .tt-req { color: var(--danger-color); }
+        #trackOrderModal .tt-field { position: relative; display: flex; align-items: center; }
+        #trackOrderModal .tt-field-icon {
+            position: absolute; left: 1.05rem; color: var(--text-subtle);
+            font-size: 1rem; pointer-events: none;
+        }
+        #trackOrderModal .tt-input {
+            width: 100%; padding: 0.95rem 1.1rem 0.95rem 2.7rem;
+            border: 1.5px solid var(--input-border); border-radius: 12px;
+            background: var(--input-bg); color: var(--input-text);
+            font-size: 1.05rem; font-family: monospace; font-weight: 700;
+            text-transform: uppercase; box-sizing: border-box; outline: none;
+            transition: border-color 0.18s, box-shadow 0.18s;
+        }
+        #trackOrderModal .tt-input::placeholder { text-transform: none; font-weight: 500; letter-spacing: 0.02em; color: var(--text-subtle); font-size: 0.95rem; }
+        #trackOrderModal .tt-input:focus { border-color: var(--accent-color); box-shadow: 0 0 0 4px rgba(0,153,255,0.14); }
+        #trackOrderModal .tt-note {
+            display: flex; align-items: flex-start; gap: 0.5rem;
+            background: rgba(0,153,255,0.05); border: 1px solid rgba(0,153,255,0.12);
+            border-radius: 10px; padding: 0.7rem 0.85rem; margin: 1rem 0 1.3rem;
+            font-size: 0.76rem; line-height: 1.45; color: var(--text-muted);
+        }
+        #trackOrderModal .tt-note i { color: var(--brand-cyan-fg); margin-top: 1px; }
+        #trackOrderModal .tt-note code { font-family: monospace; color: var(--text-main); font-weight: 700; }
+        #trackOrderModal .tt-btn-primary {
+            width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+            padding: 0.9rem 1.2rem; font-size: 0.95rem; font-weight: 800;
+            border-radius: 12px; cursor: pointer; border: none;
+            background: var(--cmyk-cyan); color: var(--text-inverse);
+            transition: all 0.16s cubic-bezier(0.4,0,0.2,1);
+        }
+        #trackOrderModal .tt-btn-primary:hover { background: var(--accent-color); transform: translateY(-1px); }
+        #trackOrderModal .tt-btn-primary:active { transform: translateY(0); }
+        #trackOrderModal .tt-btn-primary i { font-size: 0.95rem; }
+    </style>
+    </head>
+<body>
+
+        <!-- Sticky Site Header (Full Width with Shadow & Sticky Behavior) -->
+    <header class="site-header sticky top-0 z-50 w-full">
+        <!-- CMYK 4-Process Bar at Very Top of Header -->
+        <div class="cmyk-process-strip">
+            <div class="cmyk-strip-c" title="Cyan (C:100 M:0 Y:0 K:0)"></div>
+            <div class="cmyk-strip-m" title="Magenta (C:0 M:100 Y:0 K:0)"></div>
+            <div class="cmyk-strip-y" title="Yellow (C:0 M:0 Y:100 K:0)"></div>
+            <div class="cmyk-strip-k" title="Key/Black (C:0 M:0 Y:0 K:100)"></div>
+        </div>
+
+                    
+            <nav class="navbar flex items-center justify-between w-full">
+                <a href="http://127.0.0.1:8123" class="navbar-brand" style="padding: 0;">
+                    <img src="http://127.0.0.1:8123/images/logo.png" alt="Grafika South Logo">
+                </a>
+
+                
+                <div class="nav-items-group desktop-nav-group ml-auto flex items-center gap-1">
+                                                                    
+                        <a href="http://127.0.0.1:8123" class="nav-link-item ">
+                            <i class="fa-solid fa-house"></i>
+                            <span>Home</span>
+                        </a>
+                        <div class="nav-divider"></div>
+                        <a href="http://127.0.0.1:8123/products" class="nav-link-item ">
+                            <i class="fa-solid fa-layer-group"></i>
+                            <span>Catalog</span>
+                        </a>
+                        <div class="nav-divider"></div>
+                        <a href="http://127.0.0.1:8123/cart" class="nav-link-item ">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                            <span>Cart</span>
+                                                        <span class="nav-cart-badge has-items">
+                                1
+                            </span>
+                        </a>
+
+                        
+                        <div class="nav-divider"></div>
+                                                <a href="http://127.0.0.1:8123/customer/profile"
+                           class="customer-header-burger-btn"
+                           style="text-decoration:none; margin-right:0.4rem;"
+                           aria-label="My Profile"
+                           title="My Profile">
+                                                            <img src="http://127.0.0.1:8123/storage/avatars/oaxHbzLCPLJGT62ObwPhvC2Ri9vpWSXFNWJDhWlZ.jpg" alt="protodex2.0" class="customer-header-avatar">
+                                                    </a>
+                        <button type="button"
+                                id="customerDrawerBurgerBtn"
+                                onclick="toggleCustomerDrawer()"
+                                class="customer-header-burger-btn"
+                                aria-label="Toggle Customer Menu"
+                                title="Customer Menu">
+                            <i class="fa-solid fa-bars"></i>
+                                                                                        <span class="customer-header-burger-dot"></span>
+                                                    </button>
+                                            
+                                            <div class="nav-divider"></div>
+                        <button type="button"
+            class="theme-toggle"
+            data-theme-toggle
+            aria-pressed="false"
+            aria-label="Switch to dark theme"
+            title="Switch to dark theme">
+        <span class="theme-toggle__icons" aria-hidden="true">
+            <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+            <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </span>
+    </button>
+                                    </div>
+
+                
+                <div class="mobile-nav-actions">
+                                            <button type="button"
+            class="theme-toggle"
+            data-theme-toggle
+            aria-pressed="false"
+            aria-label="Switch to dark theme"
+            title="Switch to dark theme">
+        <span class="theme-toggle__icons" aria-hidden="true">
+            <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+            <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </span>
+    </button>
+                                                            <a href="http://127.0.0.1:8123/cart" class="mobile-nav-btn mobile-cart-btn " aria-label="Shopping Cart">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                                                <span class="nav-cart-badge has-items">
+                            1
+                        </span>
+                    </a>
+                    <button type="button" class="mobile-nav-btn mobile-hamburger-btn" id="mobileMenuToggleBtn" aria-label="Open Navigation Menu" aria-expanded="false">
+                        <i class="fa-solid fa-bars" id="mobileHamburgerIcon"></i>
+                    </button>
+                </div>
+            </nav>
+            </header>
+
+    <!-- MOBILE NAVIGATION SLIDE-OUT DRAWER & OVERLAY -->
+    <!-- MOBILE NAVIGATION SLIDE-OUT DRAWER & BACKDROP -->
+<div class="mobile-drawer-overlay fixed inset-0 bg-black/50 z-[10000]" id="mobileDrawerOverlay"></div>
+
+<div class="mobile-nav-drawer fixed top-0 right-0 w-80 max-w-[85vw] h-full z-[10001] shadow-2xl flex flex-col" id="mobileNavDrawer" aria-label="Mobile Navigation Menu">
+    <!-- Drawer Header -->
+    <div class="mobile-drawer-header">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <button type="button" class="mobile-drawer-back" onclick="closeMobileDrawer(); if (history.length > 1) { history.back(); } else { window.location.href = 'http://127.0.0.1:8123'; }" aria-label="Go Back" title="Back">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <a href="http://127.0.0.1:8123" style="display: flex; align-items: center; text-decoration: none;" aria-label="Grafika South Home">
+                <img src="http://127.0.0.1:8123/images/logo.png" alt="Grafika South Logo" style="height: 32px; width: auto; object-fit: contain; border-radius: 6px;">
+            </a>
+        </div>
+        <button type="button" class="mobile-drawer-close" id="mobileDrawerCloseBtn" aria-label="Close Navigation Menu">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+
+    <!-- Drawer Body (Clean Minimal List with pb-8) -->
+    <div class="mobile-drawer-body flex-1 overflow-y-auto p-4 space-y-1 pb-8 flex flex-col">
+                    <button type="button"
+            class="theme-toggle theme-toggle--drawer"
+            data-theme-toggle
+            aria-pressed="false"
+            aria-label="Switch to dark theme"
+            title="Switch to dark theme">
+        <span class="theme-toggle__icons" aria-hidden="true">
+            <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+            <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </span>
+        <span class="theme-toggle__label">Appearance</span>
+    </button>
+            <div class="mobile-drawer-divider"></div>
+                            <!-- User Account Info Card (No Orange Client Badge) -->
+            <div class="mobile-drawer-user-card mb-3 flex items-center gap-3">
+                <div class="nav-profile-thumb shrink-0" style="width: 38px; height: 38px; font-size: 0.95rem;">
+                                            <img src="http://127.0.0.1:8123/storage/avatars/oaxHbzLCPLJGT62ObwPhvC2Ri9vpWSXFNWJDhWlZ.jpg" alt="protodex2.0 sabsab makis ako">
+                                    </div>
+                <div class="mobile-drawer-user-info min-w-0 flex-1">
+                    <div class="mobile-drawer-user-name truncate font-bold text-sm">protodex2.0 sabsab makis ako</div>
+                    <div class="mobile-drawer-user-email truncate break-all text-xs" title="lalayankokak@gmail.com">lalayankokak@gmail.com</div>
+                </div>
+                            </div>
+        
+        <!-- 1. Home -->
+        <a href="http://127.0.0.1:8123" class="mobile-drawer-link ">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </a>
+
+        <!-- 2. Products Catalog -->
+        <a href="http://127.0.0.1:8123/products" class="mobile-drawer-link ">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>Products Catalog</span>
+        </a>
+
+        <!-- 3. Shopping Cart -->
+        <a href="http://127.0.0.1:8123/cart" class="mobile-drawer-link ">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <span>Shopping Cart</span>
+            <span class="nav-cart-badge has-items" style="margin-left: auto;">
+                1
+            </span>
+        </a>
+
+        <!-- 4. Track & Trace Order -->
+        <a href="http://127.0.0.1:8123/track-order" class="mobile-drawer-link " onclick="closeMobileDrawer(); if(event.ctrlKey || event.metaKey) return; event.preventDefault(); openTrackOrderModal();">
+            <i class="fa-solid fa-magnifying-glass-location"></i>
+            <span>Track &amp; Trace Order</span>
+        </a>
+
+                                    <div class="mobile-drawer-divider my-2"></div>
+
+                <!-- 5. My Orders (inactive while the To Rate tab is open) -->
+                <a href="http://127.0.0.1:8123/customer/dashboard" class="mobile-drawer-link active">
+                    <i class="fa-regular fa-clipboard"></i>
+                    <span>My Orders</span>
+                </a>
+
+                <!-- 5b. To Rate (dedicated tab for pending product reviews) -->
+                <a href="http://127.0.0.1:8123/customer/dashboard?tab=to-rate" class="mobile-drawer-link ">
+                    <i class="fa-solid fa-star" style="color: var(--warning-color);"></i>
+                    <span>To Rate</span>
+                                            <span class="notif-badge-pill" style="margin-left: auto; background: var(--warning-color);">2</span>
+                                    </a>
+
+                <!-- 6. Profile Settings -->
+                <a href="http://127.0.0.1:8123/customer/profile" class="mobile-drawer-link ">
+                    <i class="fa-regular fa-user"></i>
+                    <span>Profile Settings</span>
+                </a>
+
+                <!-- 7. Notifications -->
+                <a href="http://127.0.0.1:8123/customer/notifications" class="mobile-drawer-link ">
+                    <i class="fa-regular fa-bell"></i>
+                    <span>Notifications</span>
+                                            <span class="notif-badge-pill" style="margin-left: auto;">9</span>
+                                    </a>
+
+                <!-- 8. Support Tickets -->
+                <a href="http://127.0.0.1:8123/customer/tickets" class="mobile-drawer-link ">
+                    <i class="fa-solid fa-headset"></i>
+                    <span>Support Tickets</span>
+                </a>
+            
+            <!-- Subtle Divider -->
+            <div class="mobile-drawer-divider my-2"></div>
+
+            <!-- 9. Sign Out -->
+            <form action="http://127.0.0.1:8123/logout" method="POST" class="pt-1" onsubmit="return confirm('Are you sure you want to logout?');">
+                <input type="hidden" name="_token" value="KzVZda70uWztDrhhi7jpjvtiFwbsulUkwB93EGzh" autocomplete="off">                <button type="submit" class="mobile-drawer-link" style="width: 100%; border: none; background: var(--danger-soft); color: var(--danger-color); cursor: pointer; border-radius: 10px; font-weight: 700;">
+                    <i class="fa-solid fa-arrow-right-from-bracket" style="color: var(--danger-color);"></i>
+                    <span>Sign Out</span>
+                </button>
+            </form>
+        
+        <!-- Drawer Footer Info inside scroll container with clean pb-8 spacing -->
+        <div class="mobile-drawer-footer mt-auto pt-4 text-xs pb-8">
+            <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.35rem;">
+                <i class="fa-solid fa-phone" style="color: var(--accent-color); font-size: 0.75rem;"></i>
+                <span>+63 962 292 7736</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-location-dot" style="color: var(--brand-magenta-fg); font-size: 0.75rem;"></i>
+                <span>San Pedro, Laguna, Philippines</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- CMYK Process Strip at Bottom of Drawer -->
+    <div class="cmyk-process-strip" style="height: 4px; flex-shrink: 0;">
+        <div class="cmyk-strip-c"></div>
+        <div class="cmyk-strip-m"></div>
+        <div class="cmyk-strip-y"></div>
+        <div class="cmyk-strip-k"></div>
+    </div>
+</div>
+    
+
+    <!-- Main Content Container -->
+    <div class="container px-4 sm:px-6 lg:px-8   ">
+
+    
+                
+                                    <style>
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* Full Page Background for Customer Dashboard */
+    body {
+        background-color: var(--bg-subtle) !important;
+    }
+
+    .customer-dashboard-layout {
+        display: flex;
+        gap: 1.5rem;
+        align-items: flex-start;
+        margin-top: 0.5rem;
+    }
+
+    .customer-sidebar, aside.customer-sidebar {
+        display: none !important;
+    }
+
+    @media (max-width: 767.98px) {
+        .customer-dashboard-layout {
+            display: block;
+            gap: 0;
+            margin-top: 0;
+        }
+    }
+
+    /* Floating Back to Top button (bottom-left, like the reference) */
+    .gs-back-to-top {
+        position: fixed;
+        left: 1.25rem;
+        bottom: 1.25rem;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--text-main);
+        color: var(--text-inverse);
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        cursor: pointer;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(10px);
+        transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease, background 0.2s ease;
+        z-index: 9998;
+    }
+
+    .gs-back-to-top.is-visible {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .gs-back-to-top:hover {
+        background: var(--text-main);
+        transform: translateY(-2px);
+    }
+
+    /* Main Dashboard Content Area - Full Screen Width */
+    .customer-main-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+
+    /* Greeting Header */
+    .dashboard-greeting-title {
+        font-size: 1.85rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 0.25rem;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        max-width: 100%;
+    }
+
+    .dashboard-greeting-subtitle {
+        color: var(--text-muted);
+        font-size: 0.92rem;
+        margin-bottom: 1.75rem;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        max-width: 100%;
+        line-height: 1.5;
+    }
+
+    /* 4 Top KPI Cards Grid */
+    .kpi-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .kpi-card {
+        background: var(--bg-surface);
+        border-radius: 14px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        text-decoration: none;
+        color: inherit;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    .kpi-card-cyan { border: 2px solid var(--accent-color); }
+    .kpi-card-magenta { border: 2px solid var(--brand-magenta-fg); }
+    .kpi-card-yellow { border: 2px solid var(--warning-border); }
+    .kpi-card-slate { border: 2px solid var(--border-color); }
+
+    .kpi-card-title {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin-bottom: 0.75rem;
+    }
+
+    .kpi-card-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1;
+    }
+
+    .kpi-icon-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
+    .icon-cyan { background: var(--accent-soft); color: var(--text-accent); }
+    .icon-magenta { background: var(--brand-magenta-soft); color: var(--text-magenta); }
+    .icon-yellow { background: var(--warning-soft); color: var(--text-warning); }
+    .icon-slate { background: var(--bg-subtle); color: var(--text-muted); }
+
+    /* Middle Grid (Recent Orders & Side Cards) */
+    .dashboard-two-col {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+        align-items: start;
+    }
+
+    /* Recent Orders Card */
+    .recent-orders-card {
+        background: var(--bg-surface);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        padding: 1.5rem;
+    }
+
+    .orders-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.88rem;
+    }
+
+    .orders-table thead tr {
+        background: var(--bg-subtle);
+    }
+
+    .orders-table th {
+        padding: 0.85rem 1rem;
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .orders-table th:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+    .orders-table th:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+
+    .orders-table td {
+        padding: 1.1rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+
+    .orders-table tbody tr.clickable-row {
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+
+    .orders-table tbody tr.clickable-row:hover {
+        background-color: var(--bg-page) !important;
+    }
+
+    .order-id-link {
+        color: var(--text-main);
+        font-weight: 800;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: color 0.15s ease;
+    }
+
+    .orders-table tbody tr.clickable-row:hover .order-id-link {
+        color: var(--text-accent);
+        text-decoration: underline;
+    }
+
+    /* Polished Status Badges */
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.8rem;
+        border-radius: 9999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        white-space: nowrap;
+        text-transform: capitalize;
+        letter-spacing: 0.2px;
+        line-height: 1;
+    }
+    .status-in-production { background: var(--accent-soft); color: var(--text-accent); border: 1.5px solid var(--info-border); }
+    .status-ready { background: var(--warning-soft); color: var(--text-warning); border: 1.5px solid var(--warning-border); }
+    .status-completed { background: var(--success-soft); color: var(--text-success); border: 1.5px solid var(--success-border); }
+    .status-cancelled { background: var(--danger-soft); color: var(--text-danger); border: 1.5px solid var(--danger-border); }
+    .status-pending { background: var(--bg-subtle); color: var(--text-muted); border: 1.5px solid var(--border-color); }
+
+    /* Action Buttons Matching Picture */
+    .btn-action-details {
+        background: var(--bg-surface);
+        border: 1.5px solid var(--accent-color);
+        color: var(--text-accent);
+        padding: 0.35rem 0.85rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s;
+    }
+    .btn-action-details:hover { background: var(--accent-color); color: var(--text-inverse); }
+
+    .btn-action-track {
+        background: var(--bg-surface);
+        border: 1.5px solid var(--border-strong);
+        color: var(--text-muted);
+        padding: 0.35rem 0.85rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s;
+    }
+    .btn-action-track:hover { border-color: var(--accent-color); color: var(--text-accent); }
+
+    /* Mobile Order Cards (matches the tickets mobile-card layout) */
+    .order-mobile-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        cursor: pointer;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .order-mobile-card:active {
+        border-color: var(--accent-color);
+        box-shadow: 0 2px 8px rgba(0, 153, 255, 0.12);
+    }
+
+    /* Right Cards */
+    .quick-actions-card {
+        background: var(--bg-surface);
+        border-radius: 16px;
+        border: 1.5px solid var(--accent-color);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .btn-quick-start {
+        background: var(--accent-color);
+        color: var(--text-inverse);
+        width: 100%;
+        padding: 0.8rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        transition: background 0.2s;
+    }
+    .btn-quick-start:hover { background: var(--accent-color); }
+
+    .btn-quick-outline {
+        background: var(--bg-surface);
+        border: 1.5px solid var(--accent-color);
+        color: var(--text-accent);
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.2s;
+    }
+    .btn-quick-outline:hover { background: var(--accent-soft); }
+
+    .btn-quick-gray {
+        background: var(--bg-surface);
+        border: 1.5px solid var(--border-color);
+        color: var(--text-muted);
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+    .btn-quick-gray:hover { border-color: var(--accent-color); color: var(--text-accent); }
+
+    .notifications-side-card {
+        background: var(--bg-surface);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .account-panel-wrapper {
+        background: var(--bg-surface);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        padding: 1.75rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        margin-top: 1.5rem;
+    }
+
+    .notifications-profile-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    @media (max-width: 1024px) {
+        .dashboard-two-col {
+            grid-template-columns: 1fr !important;
+        }
+        .kpi-cards-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .notifications-profile-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-greeting-title {
+            font-size: 1.45rem !important;
+            line-height: 1.25 !important;
+            margin-bottom: 0.35rem !important;
+        }
+        .dashboard-greeting-subtitle {
+            font-size: 0.85rem !important;
+            margin-bottom: 1.25rem !important;
+        }
+        .kpi-cards-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.75rem !important;
+            margin-bottom: 1.5rem !important;
+        }
+        .kpi-card {
+            padding: 0.85rem 0.85rem !important;
+            border-radius: 12px !important;
+        }
+        .kpi-card-title {
+            font-size: 0.78rem !important;
+            margin-bottom: 0.35rem !important;
+            white-space: nowrap !important;
+        }
+        .kpi-card-value {
+            font-size: 1.6rem !important;
+        }
+        .kpi-icon-circle {
+            width: 28px !important;
+            height: 28px !important;
+            font-size: 0.8rem !important;
+        }
+        .recent-orders-card {
+            padding: 1rem !important;
+            border-radius: 12px !important;
+        }
+    }
+
+    /* Clean Modern Pagination Controls */
+    .orders-pagination-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding-top: 1.25rem;
+        border-top: 1.5px solid var(--border-color);
+    }
+
+    .pagination-info {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .pagination-info .fw-bold {
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .pagination-buttons {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+    }
+
+    .pagination-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.45rem 0.95rem;
+        border-radius: 8px;
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        background: var(--bg-surface);
+        border: 1.5px solid var(--border-color);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        line-height: 1;
+    }
+
+    .pagination-btn:hover:not(.disabled) {
+        border-color: var(--accent-color);
+        color: var(--text-accent);
+        background: var(--accent-soft);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(0, 153, 255, 0.15);
+    }
+
+    .pagination-btn.disabled {
+        background: var(--bg-page);
+        color: var(--text-disabled);
+        border-color: var(--border-color);
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    .pagination-numbers {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .pagination-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 0.5rem;
+        border-radius: 8px;
+        font-size: 0.86rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        background: var(--bg-surface);
+        border: 1.5px solid var(--border-color);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        line-height: 1;
+    }
+
+    .pagination-num:hover:not(.active) {
+        border-color: var(--accent-color);
+        color: var(--text-accent);
+        background: var(--accent-soft);
+    }
+
+    .pagination-num.active {
+        background: var(--accent-color);
+        color: var(--text-inverse);
+        border-color: var(--accent-color);
+        box-shadow: 0 2px 8px rgba(0, 153, 255, 0.28);
+    }
+
+    /* Prevent any unstyled giant pagination SVGs */
+    .orders-pagination-container svg,
+    .pagination svg,
+    nav[role="navigation"] svg {
+        width: 1.15rem !important;
+        height: 1.15rem !important;
+        max-width: 1.15rem !important;
+        max-height: 1.15rem !important;
+        display: inline-block !important;
+        vertical-align: middle !important;
+    }
+</style>
+
+<div class="customer-dashboard-layout flex flex-col md:flex-row gap-6 items-start" id="dashboard-top">
+    <!-- LEFT SIDEBAR NAVIGATION -->
+    <style>
+    /* Completely hide static in-page customer sidebar across all viewports for full-screen desktop experience */
+    .customer-sidebar,
+    aside.customer-sidebar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        overflow: hidden !important;
+        visibility: hidden !important;
+    }
+
+    .customer-main-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+
+    /* Offcanvas Customer Drawer Backdrop */
+    .customer-drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.48);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 10000;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+
+    .customer-drawer-backdrop.is-open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    /* Offcanvas Customer Drawer Panel (Slide in from Right) */
+    .customer-drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: auto;
+        width: 320px;
+        max-width: 86vw;
+        background: var(--bg-surface);
+        z-index: 10001;
+        transform: translateX(100%);
+        transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: -10px 0 40px -10px rgba(15, 23, 42, 0.28);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .customer-drawer.is-open {
+        transform: translateX(0);
+    }
+
+    /* Drawer Header */
+    .customer-drawer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.15rem 1.15rem 1rem 1.15rem;
+        background: linear-gradient(180deg, var(--bg-page) 0%, var(--bg-surface) 100%);
+        border-bottom: 1px solid var(--border-color);
+        position: relative;
+    }
+
+    .customer-drawer-user {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .customer-drawer-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: var(--accent-color);
+        color: var(--text-inverse);
+        font-weight: 800;
+        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        overflow: hidden;
+        box-shadow: 0 4px 10px rgba(0, 153, 255, 0.25);
+        border: 2px solid var(--border-color);
+    }
+
+    .customer-drawer-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .customer-drawer-user-info {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .customer-drawer-name {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin: 0 0 2px 0;
+    }
+
+    .customer-drawer-close-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.18s ease;
+        flex-shrink: 0;
+        margin-left: 0.5rem;
+    }
+
+    .customer-drawer-close-btn:hover {
+        background: var(--bg-subtle);
+        color: var(--text-main);
+        border-color: var(--border-color);
+    }
+
+    /* Drawer Body / Menu items */
+    .customer-drawer-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.85rem 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+
+    .customer-drawer-section-title {
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-subtle);
+        padding: 0.4rem 0.75rem 0.25rem;
+    }
+
+    .drawer-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.75rem 0.9rem;
+        border-radius: 10px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.92rem;
+        transition: background-color 0.18s ease, color 0.18s ease;
+        position: relative;
+    }
+
+    .drawer-menu-item i {
+        width: 1.25rem;
+        text-align: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+        color: var(--text-muted);
+        transition: color 0.18s ease;
+    }
+
+    .drawer-menu-item:hover {
+        background: var(--bg-page);
+        color: var(--text-main);
+    }
+
+    .drawer-menu-item:hover i {
+        color: var(--text-accent);
+    }
+
+    .drawer-menu-item.active {
+        background: var(--accent-soft);
+        color: var(--text-accent);
+        font-weight: 700;
+    }
+
+    .drawer-menu-item.active i {
+        color: var(--text-accent);
+    }
+
+    .drawer-badge-pill {
+        background: var(--brand-magenta-fg);
+        color: var(--text-inverse);
+        font-size: 0.75rem;
+        font-weight: 800;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: auto;
+    }
+
+    .drawer-divider {
+        height: 1px;
+        background: var(--text-disabled);
+        margin: 0.65rem 0.5rem;
+    }
+
+    .drawer-menu-item.logout-item {
+        color: var(--text-danger);
+        width: 100%;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .drawer-menu-item.logout-item i {
+        color: var(--text-danger);
+    }
+
+    .drawer-menu-item.logout-item:hover {
+        background: var(--danger-soft);
+        color: var(--text-danger);
+    }
+
+    .drawer-menu-item.logout-item:hover i {
+        color: var(--text-danger);
+    }
+
+    /* Drawer Footer */
+    .customer-drawer-footer {
+        padding: 0.9rem 1.15rem;
+        border-top: 1px solid var(--border-color);
+        background: var(--bg-page);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.78rem;
+        color: var(--text-subtle);
+        font-weight: 600;
+    }
+
+    .customer-drawer-no-scroll {
+        overflow: hidden !important;
+    }
+
+    /* Logout Confirmation Modal Styling */
+    .logout-modal-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 99999;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        animation: fadeInBackdrop 0.2s ease-out;
+    }
+
+    @keyframes fadeInBackdrop {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .logout-modal-card {
+        background: var(--bg-surface);
+        border-radius: 16px;
+        width: 100%;
+        max-width: 440px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        animation: slideUpModal 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 1.5rem;
+    }
+
+    @keyframes slideUpModal {
+        from { transform: translateY(12px) scale(0.98); opacity: 0; }
+        to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .logout-modal-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .logout-modal-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: var(--danger-soft);
+        color: var(--text-danger);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+        border: 1px solid var(--danger-border);
+    }
+
+    .logout-modal-title {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin: 0 0 0.25rem 0;
+    }
+
+    .logout-modal-subtitle {
+        font-size: 0.88rem;
+        color: var(--text-muted);
+        margin: 0;
+        line-height: 1.45;
+        font-weight: 600;
+    }
+
+    .logout-modal-body {
+        background: var(--bg-page);
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        border: 1px solid var(--border-color);
+        margin-bottom: 1.25rem;
+    }
+
+    .logout-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+
+    .logout-btn-cancel {
+        padding: 0.6rem 1.25rem;
+        border-radius: 10px;
+        border: 1.5px solid var(--border-color);
+        background: var(--bg-surface);
+        color: var(--text-muted);
+        font-weight: 700;
+        font-size: 0.88rem;
+        cursor: pointer;
+        transition: all 0.18s ease;
+    }
+
+    .logout-btn-cancel:hover {
+        background: var(--bg-subtle);
+        color: var(--text-main);
+        border-color: var(--border-strong);
+    }
+
+    .logout-btn-confirm {
+        padding: 0.6rem 1.35rem;
+        border-radius: 10px;
+        border: none;
+        background: var(--danger-color);
+        color: var(--text-inverse);
+        font-weight: 700;
+        font-size: 0.88rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+        transition: all 0.18s ease;
+    }
+
+    .logout-btn-confirm:hover {
+        background: var(--danger-color);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(220, 38, 38, 0.35);
+    }
+</style>
+
+
+<div id="customerDrawerBackdrop" 
+     class="customer-drawer-backdrop" 
+     onclick="closeCustomerDrawer()" 
+     aria-hidden="true"></div>
+
+
+<aside id="customerDrawer" 
+       class="customer-drawer" 
+       role="dialog" 
+       aria-modal="true" 
+       aria-label="Customer Navigation Drawer">
+
+    
+        <div class="customer-drawer-header">
+        <div class="customer-drawer-user">
+            <div class="customer-drawer-avatar">
+                                    <img src="http://127.0.0.1:8123/storage/avatars/oaxHbzLCPLJGT62ObwPhvC2Ri9vpWSXFNWJDhWlZ.jpg" alt="protodex2.0">
+                            </div>
+            <div class="customer-drawer-user-info">
+                <h4 class="customer-drawer-name">protodex2.0</h4>
+            </div>
+        </div>
+        <button type="button" 
+                class="customer-drawer-close-btn" 
+                onclick="closeCustomerDrawer()" 
+                aria-label="Close menu" 
+                title="Close menu">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+
+    
+    <div class="customer-drawer-body">
+        <div class="customer-drawer-section-title">Account Menu</div>
+
+        
+        <a href="http://127.0.0.1:8123/customer/profile" class="drawer-menu-item ">
+            <i class="fa-regular fa-user"></i>
+            <span>Profile Settings</span>
+        </a>
+
+        
+        <a href="http://127.0.0.1:8123/customer/dashboard" class="drawer-menu-item active">
+            <i class="fa-regular fa-clipboard"></i>
+            <span>My Orders</span>
+        </a>
+
+        
+        <a href="http://127.0.0.1:8123/customer/dashboard?tab=to-rate" class="drawer-menu-item ">
+            <i class="fa-regular fa-star"></i>
+            <span>To Rate</span>
+                            <span class="drawer-badge-pill">2</span>
+                    </a>
+
+        
+        <a href="http://127.0.0.1:8123/track-order" class="drawer-menu-item " onclick="closeCustomerDrawer(); if(event.ctrlKey || event.metaKey) return; event.preventDefault(); openTrackOrderModal();">
+            <i class="fa-solid fa-magnifying-glass-location"></i>
+            <span>Track &amp; Trace</span>
+        </a>
+
+        
+        <a href="http://127.0.0.1:8123/customer/notifications" class="drawer-menu-item ">
+            <i class="fa-regular fa-bell"></i>
+            <span>Notifications</span>
+                            <span class="drawer-badge-pill">9</span>
+                    </a>
+
+        
+        <a href="http://127.0.0.1:8123/customer/tickets" class="drawer-menu-item ">
+            <i class="fa-solid fa-headset"></i>
+            <span>Support Tickets</span>
+        </a>
+
+        
+        
+        <div class="drawer-divider"></div>
+
+        
+        <button type="button" class="drawer-menu-item logout-item" onclick="openLogoutModal()">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            <span>Logout</span>
+        </button>
+    </div>
+
+    
+    <div class="customer-drawer-footer">
+        <span class="flex items-center gap-1.5">
+            <i class="fa-solid fa-shield-halved text-sky-500"></i>
+            <span>Grafika South Portal</span>
+        </span>
+        <div class="flex items-center gap-1">
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: var(--accent-color); display: inline-block;"></span>
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: var(--brand-magenta-fg); display: inline-block;"></span>
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: var(--warning-color); display: inline-block;"></span>
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: var(--text-main); display: inline-block;"></span>
+        </div>
+    </div>
+</aside>
+
+
+<form id="customer-logout-form" action="http://127.0.0.1:8123/logout" method="POST" style="display: none;">
+    <input type="hidden" name="_token" value="KzVZda70uWztDrhhi7jpjvtiFwbsulUkwB93EGzh" autocomplete="off"></form>
+
+
+<div id="logoutConfirmationModal" class="logout-modal-backdrop" onclick="if(event.target === this) closeLogoutModal()">
+    <div class="logout-modal-card">
+        <div class="logout-modal-header">
+            <div class="logout-modal-icon">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </div>
+            <div>
+                <h3 class="logout-modal-title">Log Out Confirmation</h3>
+                <p class="logout-modal-subtitle">Are you sure you want to log out of your Grafika South account?</p>
+            </div>
+        </div>
+
+        <div class="logout-modal-body">
+            <p style="font-size: 0.84rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
+                <i class="fa-solid fa-shield-halved" style="color: var(--text-accent); margin-right: 4px;"></i>
+                Your active session will be ended securely. You can log back in anytime with your registered credentials.
+            </p>
+        </div>
+
+        <div class="logout-modal-actions">
+            <button type="button" class="logout-btn-cancel" onclick="closeLogoutModal()">
+                Cancel
+            </button>
+            <button type="button" class="logout-btn-confirm" onclick="confirmLogout()">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> Yes, Log Out
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openCustomerDrawer() {
+    const drawer = document.getElementById('customerDrawer');
+    const backdrop = document.getElementById('customerDrawerBackdrop');
+    if (drawer) drawer.classList.add('is-open');
+    if (backdrop) backdrop.classList.add('is-open');
+    document.body.classList.add('customer-drawer-no-scroll');
+}
+
+function closeCustomerDrawer() {
+    const drawer = document.getElementById('customerDrawer');
+    const backdrop = document.getElementById('customerDrawerBackdrop');
+    if (drawer) drawer.classList.remove('is-open');
+    if (backdrop) backdrop.classList.remove('is-open');
+    document.body.classList.remove('customer-drawer-no-scroll');
+}
+
+function toggleCustomerDrawer() {
+    const drawer = document.getElementById('customerDrawer');
+    if (drawer && drawer.classList.contains('is-open')) {
+        closeCustomerDrawer();
+    } else {
+        openCustomerDrawer();
+    }
+}
+
+function openLogoutModal() {
+    closeCustomerDrawer();
+    const modal = document.getElementById('logoutConfirmationModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+function closeLogoutModal() {
+    const modal = document.getElementById('logoutConfirmationModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function confirmLogout() {
+    const form = document.getElementById('customer-logout-form');
+    if (form) {
+        form.submit();
+    }
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('logoutConfirmationModal');
+        if (modal && modal.style.display === 'flex') {
+            closeLogoutModal();
+            return;
+        }
+        closeCustomerDrawer();
+    }
+});
+</script>
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <main class="customer-main-content flex-1 w-full min-w-0">
+        <!-- GREETING HEADER -->
+        <div class="dashboard-greeting-title break-words max-w-full">
+            Welcome back, protodex2.0
+        </div>
+        <div class="dashboard-greeting-subtitle break-words max-w-full text-wrap">
+            Here is a summary of your recent print orders and account activity.
+        </div>
+
+                        <!-- 4 TOP KPI CARDS GRID WITH CMYK BORDERS -->
+        <div class="kpi-cards-grid grid grid-cols-2 gap-3 md:grid-cols-4">
+            <!-- Active Orders (Cyan Border) -->
+            <a href="http://127.0.0.1:8123/customer/dashboard?status=active#orders-section" class="kpi-card kpi-card-cyan" title="View active orders">
+                <div>
+                    <div class="kpi-card-title">Active Orders</div>
+                    <div class="kpi-card-value">1</div>
+                </div>
+                <div class="kpi-icon-circle icon-cyan">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </div>
+            </a>
+
+            <!-- Completed (Magenta Border) -->
+            <a href="http://127.0.0.1:8123/customer/dashboard?status=completed#orders-section" class="kpi-card kpi-card-magenta" title="View completed & cancelled orders">
+                <div>
+                    <div class="kpi-card-title">Completed</div>
+                    <div class="kpi-card-value">2</div>
+                </div>
+                <div class="kpi-icon-circle icon-magenta">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </a>
+
+            <!-- Pending (Yellow Border) -->
+            <a href="http://127.0.0.1:8123/customer/dashboard?status=pending#orders-section" class="kpi-card kpi-card-yellow" title="View pending orders">
+                <div>
+                    <div class="kpi-card-title">Pending</div>
+                    <div class="kpi-card-value">0</div>
+                </div>
+                <div class="kpi-icon-circle icon-yellow">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                </div>
+            </a>
+
+            <!-- Total Orders (Slate Border) -->
+            <a href="http://127.0.0.1:8123/customer/dashboard?status=all#orders-section" class="kpi-card kpi-card-slate" title="View all orders">
+                <div>
+                    <div class="kpi-card-title">Total Orders</div>
+                    <div class="kpi-card-value">3</div>
+                </div>
+                <div class="kpi-icon-circle icon-slate">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+            </a>
+        </div>
+
+        <!-- RECENT ORDERS TABLE -->
+        <div class="recent-orders-card" id="orders-section">
+            <div style="margin-bottom: 1.25rem;">
+                <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); font-family: 'Outfit', sans-serif; margin: 0;">
+                    Recent Orders
+                </h3>
+            </div>
+
+            <!-- SEARCH AND FILTER BAR COMPONENT -->
+            <form action="http://127.0.0.1:8123/customer/dashboard" method="GET" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; background: var(--bg-page); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                <div style="flex: 1; min-width: 240px; display: flex; align-items: center;">
+                    <input type="text" name="search" value="" placeholder="Search by product name or order ID..." style="flex: 1; min-width: 0; padding: 0.6rem 1rem; border: 1.5px solid var(--border-color); border-right: none; border-radius: 10px 0 0 10px; font-size: 0.88rem; outline: none; background: var(--bg-surface); font-family: inherit; color: var(--text-main);" onfocus="this.style.borderColor='#0099FF'" onblur="this.style.borderColor='#CBD5E1'">
+                    <button type="submit" style="background: var(--accent-color); color: var(--text-inverse); border: 1.5px solid var(--accent-color); padding: 0.6rem 1.25rem; border-radius: 0 10px 10px 0; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; transition: background 0.2s, border-color 0.2s; white-space: nowrap;" onmouseover="this.style.background='#0080FF';this.style.borderColor='#0080FF'" onmouseout="this.style.background='#0099FF';this.style.borderColor='#0099FF'">
+                        <i class="fa-solid fa-magnifying-glass"></i> Search
+                    </button>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                    <select name="status" onchange="this.form.submit()" style="padding: 0.6rem 1rem; border: 1.5px solid var(--border-color); border-radius: 8px; font-size: 0.88rem; color: var(--text-muted); background: var(--bg-surface); font-weight: 600; cursor: pointer; outline: none;">
+                        <option value="all" selected>All Product Statuses</option>
+                        <option value="active" >Active</option>
+                        <option value="pending" >Pending</option>
+                        <option value="in_production" >In Production</option>
+                        <option value="ready" >Ready for Pickup</option>
+                        <option value="completed" >Completed</option>
+                        <option value="cancelled" >Cancelled</option>
+                    </select>
+
+                                    </div>
+            </form>
+
+            <!-- MOBILE CARD LAYOUT (md:hidden) -->
+            <div class="block md:hidden space-y-3">
+                                                        <div class="order-mobile-card" onclick="window.location.href='http://127.0.0.1:8123/customer/orders/69'" title="View order #GS-20261103-4ON7N">
+                        <!-- Top row: Order ID + Status -->
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="text-sm font-bold text-gray-900 break-all">#GS-20261103-4ON7N</span>
+                                                            <span class="status-pill status-completed"><i class="fa-solid fa-circle-check" style="font-size: 0.7rem;"></i> Completed</span>
+                                                    </div>
+
+                        <!-- Middle row: product thumbnail + name + amount -->
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-11 h-11 rounded-lg border border-gray-100 shrink-0 overflow-hidden bg-sky-50 flex items-center justify-center">
+                                                                    <img src="http://127.0.0.1:8123/storage/products/ixOXyyY9uxdkY3NpDRBFv1AQu3f8Zxlzf1BcS0uZ.jpg" alt="not custom item" class="w-full h-full object-cover">
+                                                            </div>
+                            <div class="flex flex-col min-w-0 flex-1">
+                                <span class="font-semibold text-gray-800 text-sm truncate">not custom item</span>
+                                                                    <span class="text-[10px] text-orange-500 font-bold">Custom Order</span>
+                                                            </div>
+                            <div class="font-extrabold text-gray-900 text-sm shrink-0">&#8369;90.00</div>
+                        </div>
+
+                        <!-- Bottom row: date + Details action -->
+                        <div class="flex items-center justify-between pt-2.5 border-t border-slate-100 text-xs">
+                            <div class="text-slate-500 font-medium">
+                                <i class="fa-regular fa-clock text-slate-400 mr-1"></i>Nov 03, 2026
+                            </div>
+                            <a href="http://127.0.0.1:8123/customer/orders/69" class="btn-action-details" onclick="event.stopPropagation();">
+                                Details <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem; margin-left: 0.35rem;"></i>
+                            </a>
+                        </div>
+                    </div>
+                                                        <div class="order-mobile-card" onclick="window.location.href='http://127.0.0.1:8123/customer/orders/68'" title="View order #GS-20261103-ZFU1T">
+                        <!-- Top row: Order ID + Status -->
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="text-sm font-bold text-gray-900 break-all">#GS-20261103-ZFU1T</span>
+                                                            <span class="status-pill status-in-production"><i class="fa-solid fa-gears" style="font-size: 0.7rem;"></i> In Production</span>
+                                                    </div>
+
+                        <!-- Middle row: product thumbnail + name + amount -->
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-11 h-11 rounded-lg border border-gray-100 shrink-0 overflow-hidden bg-sky-50 flex items-center justify-center">
+                                                                    <img src="http://127.0.0.1:8123/storage/products/ixOXyyY9uxdkY3NpDRBFv1AQu3f8Zxlzf1BcS0uZ.jpg" alt="not custom item" class="w-full h-full object-cover">
+                                                            </div>
+                            <div class="flex flex-col min-w-0 flex-1">
+                                <span class="font-semibold text-gray-800 text-sm truncate">not custom item</span>
+                                                                    <span class="text-[10px] text-orange-500 font-bold">Custom Order</span>
+                                                            </div>
+                            <div class="font-extrabold text-gray-900 text-sm shrink-0">&#8369;90.00</div>
+                        </div>
+
+                        <!-- Bottom row: date + Details action -->
+                        <div class="flex items-center justify-between pt-2.5 border-t border-slate-100 text-xs">
+                            <div class="text-slate-500 font-medium">
+                                <i class="fa-regular fa-clock text-slate-400 mr-1"></i>Nov 03, 2026
+                            </div>
+                            <a href="http://127.0.0.1:8123/customer/orders/68" class="btn-action-details" onclick="event.stopPropagation();">
+                                Details <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem; margin-left: 0.35rem;"></i>
+                            </a>
+                        </div>
+                    </div>
+                                                        <div class="order-mobile-card" onclick="window.location.href='http://127.0.0.1:8123/customer/orders/67'" title="View order #GS-20261103-ILVJU">
+                        <!-- Top row: Order ID + Status -->
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="text-sm font-bold text-gray-900 break-all">#GS-20261103-ILVJU</span>
+                                                            <span class="status-pill status-completed"><i class="fa-solid fa-circle-check" style="font-size: 0.7rem;"></i> Completed</span>
+                                                    </div>
+
+                        <!-- Middle row: product thumbnail + name + amount -->
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-11 h-11 rounded-lg border border-gray-100 shrink-0 overflow-hidden bg-sky-50 flex items-center justify-center">
+                                                                    <img src="http://127.0.0.1:8123/storage/products/wkvBFIXIFOEzDFvGNDfxkX1K3PkFYhliiE6UJsRt.jpg" alt="PBC ID" class="w-full h-full object-cover">
+                                                            </div>
+                            <div class="flex flex-col min-w-0 flex-1">
+                                <span class="font-semibold text-gray-800 text-sm truncate">PBC ID</span>
+                                                            </div>
+                            <div class="font-extrabold text-gray-900 text-sm shrink-0">&#8369;350.00</div>
+                        </div>
+
+                        <!-- Bottom row: date + Details action -->
+                        <div class="flex items-center justify-between pt-2.5 border-t border-slate-100 text-xs">
+                            <div class="text-slate-500 font-medium">
+                                <i class="fa-regular fa-clock text-slate-400 mr-1"></i>Nov 03, 2026
+                            </div>
+                            <a href="http://127.0.0.1:8123/customer/orders/67" class="btn-action-details" onclick="event.stopPropagation();">
+                                Details <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem; margin-left: 0.35rem;"></i>
+                            </a>
+                        </div>
+                    </div>
+                            </div>
+
+            <!-- DESKTOP TABLE LAYOUT (hidden md:block) -->
+            <div class="hidden md:block" style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch;">
+                <table class="orders-table" style="min-width: 580px;">
+                <thead>
+                    <tr>
+                        <th>ORDER ID</th>
+                        <th>PRODUCT</th>
+                        <th>DATE</th>
+                        <th>AMOUNT</th>
+                        <th>STATUS</th>
+                        <th style="text-align: center;">ACTION</th>
+                    </tr>
+                </thead>
+                <tbody>
+                                                                    <tr class="clickable-row" onclick="window.location.href='http://127.0.0.1:8123/customer/orders/69'" title="Click to view order details for #GS-20261103-4ON7N">
+                            <td>
+                                <a href="http://127.0.0.1:8123/customer/orders/69" class="order-id-link">
+                                    #GS-20261103-4ON7N
+                                </a>
+                                                            </td>
+                            <td style="font-weight: 600; color: var(--text-muted);">
+                                                                                                        <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-lg border border-gray-100 shrink-0 overflow-hidden bg-sky-50 flex items-center justify-center">
+                                                                                            <img src="http://127.0.0.1:8123/storage/products/ixOXyyY9uxdkY3NpDRBFv1AQu3f8Zxlzf1BcS0uZ.jpg" alt="not custom item" class="w-full h-full object-cover">
+                                                                                    </div>
+                                        <div class="flex flex-col min-w-0">
+                                            <span class="font-semibold text-gray-800 text-xs sm:text-sm break-words">not custom item</span>
+                                                                                            <span class="text-[10px] text-orange-500 font-bold">Custom Order</span>
+                                                                                    </div>
+                                    </div>
+                                                            </td>
+                            <td style="color: var(--text-muted); font-size: 0.85rem; white-space: nowrap;">
+                                Nov 03, 2026
+                            </td>
+                            <td style="font-weight: 800; color: var(--text-main);">
+                                ₱90.00
+                            </td>
+                            <td>
+                                                                    <span class="status-pill status-completed">
+                                        <i class="fa-solid fa-circle-check" style="font-size: 0.72rem;"></i> Completed
+                                    </span>
+                                                            </td>
+                            <td style="text-align: center;" onclick="event.stopPropagation();">
+                                                                <div style="display:flex; align-items:center; justify-content:center; gap:0.5rem; flex-wrap:wrap;">
+                                    <a href="http://127.0.0.1:8123/customer/orders/69" class="btn-action-details">
+                                        Details
+                                    </a>
+                                                                                                                    <button type="button" onclick="openReviewModal(66, 'not custom item', 'http:\/\/127.0.0.1:8123\/storage\/products\/ixOXyyY9uxdkY3NpDRBFv1AQu3f8Zxlzf1BcS0uZ.jpg', 'GS-20261103-4ON7N')"
+                                            class="px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors flex items-center gap-1" style="cursor:pointer;" title="Rate not custom item">
+                                            <i class="fa-solid fa-star text-amber-500"></i> Rate
+                                        </button>
+                                                                    </div>
+                            </td>
+                        </tr>
+                                                                    <tr class="clickable-row" onclick="window.location.href='http://127.0.0.1:8123/customer/orders/68'" title="Click to view order details for #GS-20261103-ZFU1T">
+                            <td>
+                                <a href="http://127.0.0.1:8123/customer/orders/68" class="order-id-link">
+                                    #GS-20261103-ZFU1T
+                                </a>
+                                                            </td>
+                            <td style="font-weight: 600; color: var(--text-muted);">
+                                                                                                        <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-lg border border-gray-100 shrink-0 overflow-hidden bg-sky-50 flex items-center justify-center">
+                                                                                            <img src="http://127.0.0.1:8123/storage/products/ixOXyyY9uxdkY3NpDRBFv1AQu3f8Zxlzf1BcS0uZ.jpg" alt="not custom item" class="w-full h-full object-cover">
+                                                                                    </div>
+                                        <div class="flex flex-col min-w-0">
+                                            <span class="font-semibold text-gray-800 text-xs sm:text-sm break-words">not custom item</span>
+                                                                                            <span class="text-[10px] text-orange-500 font-bold">Custom Order</span>
+                                                                                    </div>
+                                    </div>
+                                                            </td>
+                            <td style="color: var(--text-muted); font-size: 0.85rem; white-space: nowrap;">
+                                Nov 03, 2026
+                            </td>
+                            <td style="font-weight: 800; color: var(--text-main);">
+                                ₱90.00
+                            </td>
+                            <td>
+                                                                    <span class="status-pill status-in-production">
+                                        <i class="fa-solid fa-gears" style="font-size: 0.72rem;"></i> In Production
+                                    </span>
+                                                            </td>
+                            <td style="text-align: center;" onclick="event.stopPropagation();">
+                                                                <div style="display:flex; align-items:center; justify-content:center; gap:0.5rem; flex-wrap:wrap;">
+                                    <a href="http://127.0.0.1:8123/customer/orders/68" class="btn-action-details">
+                                        Details
+                                    </a>
+                                                                    </div>
+                            </td>
+                        </tr>
+                                                                    <tr class="clickable-row" onclick="window.location.href='http://127.0.0.1:8123/customer/orders/67'" title="Click to view order details for #GS-20261103-ILVJU">
+                            <td>
+                                <a href="http://127.0.0.1:8123/customer/orders/67" class="order-id-link">
+                                    #GS-20261103-ILVJU
+                                </a>
+                                                            </td>
+                            <td style="font-weight: 600; color: var(--text-muted);">
+                                                                                                        <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-lg border border-gray-100 shrink-0 overflow-hidden bg-sky-50 flex items-center justify-center">
+                                                                                            <img src="http://127.0.0.1:8123/storage/products/wkvBFIXIFOEzDFvGNDfxkX1K3PkFYhliiE6UJsRt.jpg" alt="PBC ID" class="w-full h-full object-cover">
+                                                                                    </div>
+                                        <div class="flex flex-col min-w-0">
+                                            <span class="font-semibold text-gray-800 text-xs sm:text-sm break-words">PBC ID</span>
+                                                                                    </div>
+                                    </div>
+                                                            </td>
+                            <td style="color: var(--text-muted); font-size: 0.85rem; white-space: nowrap;">
+                                Nov 03, 2026
+                            </td>
+                            <td style="font-weight: 800; color: var(--text-main);">
+                                ₱350.00
+                            </td>
+                            <td>
+                                                                    <span class="status-pill status-completed">
+                                        <i class="fa-solid fa-circle-check" style="font-size: 0.72rem;"></i> Completed
+                                    </span>
+                                                            </td>
+                            <td style="text-align: center;" onclick="event.stopPropagation();">
+                                                                <div style="display:flex; align-items:center; justify-content:center; gap:0.5rem; flex-wrap:wrap;">
+                                    <a href="http://127.0.0.1:8123/customer/orders/67" class="btn-action-details">
+                                        Details
+                                    </a>
+                                                                                                                    <button type="button" onclick="openReviewModal(64, 'PBC ID', 'http:\/\/127.0.0.1:8123\/storage\/products\/wkvBFIXIFOEzDFvGNDfxkX1K3PkFYhliiE6UJsRt.jpg', 'GS-20261103-ILVJU')"
+                                            class="px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors flex items-center gap-1" style="cursor:pointer;" title="Rate PBC ID">
+                                            <i class="fa-solid fa-star text-amber-500"></i> Rate
+                                        </button>
+                                                                    </div>
+                            </td>
+                        </tr>
+                                    </tbody>
+            </table>
+            </div>
+
+            
+                    </div>
+        
+        
+        <div id="reviewModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.7); z-index:99999; align-items:center; justify-content:center; padding:1.5rem 1rem; backdrop-filter:blur(4px);">
+    <div style="background:var(--bg-surface); border-radius:16px; max-width:540px; width:100%; box-shadow:0 25px 50px -12px rgba(0,0,0,0.3); border:1px solid var(--border-color); overflow:hidden; max-height:90vh; overflow-y:auto;">
+        <!-- Modal Header -->
+        <div style="background:var(--warning-soft); border-bottom:1px solid var(--warning-border); padding:1.25rem 1.5rem; display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+                <div style="width:36px; height:36px; border-radius:50%; background:var(--warning-soft); color:var(--text-warning); display:flex; align-items:center; justify-content:center; font-size:1rem;">
+                    <i class="fa-solid fa-star"></i>
+                </div>
+                <div>
+                    <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-warning); margin:0;">Rate &amp; Review Product</h3>
+                    <div style="font-size:0.75rem; color:var(--text-warning);">Only for completed orders</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeReviewModal()" style="background:none; border:none; color:var(--text-warning); font-size:1.2rem; cursor:pointer; padding:0.25rem;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="http://127.0.0.1:8123/customer/reviews" method="POST" enctype="multipart/form-data" style="padding:1.5rem;" onsubmit="return validateReviewForm(this)">
+            <input type="hidden" name="_token" value="KzVZda70uWztDrhhi7jpjvtiFwbsulUkwB93EGzh" autocomplete="off">            <input type="hidden" name="order_item_id" id="review_order_item_id" value="">
+
+            <!-- Product Picture + Title + Order Reference -->
+            <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1.1rem; background:var(--bg-page); border:1px solid var(--border-color); border-radius:12px; padding:0.65rem 0.85rem;">
+                <div style="width:48px; height:48px; border-radius:10px; overflow:hidden; background:var(--accent-soft); border:1px solid var(--info-border); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <img id="review_product_image" src="" alt="" style="display:none; width:100%; height:100%; object-fit:cover;">
+                    <i id="review_product_icon" class="fa-solid fa-print" style="color:var(--text-accent); font-size:1.1rem;"></i>
+                </div>
+                <div style="min-width:0;">
+                    <div style="font-size:0.72rem; color:var(--text-muted);">Reviewing</div>
+                    <strong id="review_product_name" style="color:var(--text-main); font-size:0.92rem; overflow-wrap:break-word;"></strong>
+                </div>
+                <span id="review_order_label" style="margin-left:auto; font-size:0.7rem; font-weight:800; color:var(--text-accent); background:var(--accent-soft); padding:0.15rem 0.5rem; border-radius:6px; white-space:nowrap; flex-shrink:0;"></span>
+            </div>
+
+            <!-- Star Rating Picker -->
+            <div style="margin-bottom:1rem;">
+                <label style="font-size:0.85rem; font-weight:700; color:var(--text-main); display:block; margin-bottom:0.4rem;">Your Rating <span style="color:var(--text-danger);">*</span></label>
+                <div id="reviewStarPicker" style="display:flex; gap:0.5rem; font-size:1.7rem; cursor:pointer;">
+                                            <i class="fa-solid fa-star review-star-icon" data-star="1" onclick="setReviewStars(1)" style="color:var(--text-disabled); transition:color 0.15s, transform 0.15s;" aria-label="1 star"></i>
+                                            <i class="fa-solid fa-star review-star-icon" data-star="2" onclick="setReviewStars(2)" style="color:var(--text-disabled); transition:color 0.15s, transform 0.15s;" aria-label="2 stars"></i>
+                                            <i class="fa-solid fa-star review-star-icon" data-star="3" onclick="setReviewStars(3)" style="color:var(--text-disabled); transition:color 0.15s, transform 0.15s;" aria-label="3 stars"></i>
+                                            <i class="fa-solid fa-star review-star-icon" data-star="4" onclick="setReviewStars(4)" style="color:var(--text-disabled); transition:color 0.15s, transform 0.15s;" aria-label="4 stars"></i>
+                                            <i class="fa-solid fa-star review-star-icon" data-star="5" onclick="setReviewStars(5)" style="color:var(--text-disabled); transition:color 0.15s, transform 0.15s;" aria-label="5 stars"></i>
+                                    </div>
+                <input type="hidden" name="rating" id="review_rating_input" value="">
+                <div id="review_rating_label" style="font-size:0.78rem; color:var(--text-muted); margin-top:0.35rem;">Tap a star to rate (1 = Poor, 5 = Excellent)</div>
+                <div id="review_rating_error" style="font-size:0.78rem; color:var(--text-danger); font-weight:600; margin-top:0.35rem; display:none;"><i class="fa-solid fa-circle-exclamation"></i> Please select a star rating.</div>
+            </div>
+
+            <!-- Comment -->
+            <div style="margin-bottom:1rem;">
+                <label for="review_comment" style="font-size:0.85rem; font-weight:700; color:var(--text-main); display:block; margin-bottom:0.4rem;">Your Review <span style="font-weight:500; color:var(--text-muted);">(optional)</span></label>
+                <textarea name="comment" id="review_comment" rows="4" maxlength="1000" placeholder="How was the print quality, turnaround time, and overall experience?" style="width:100%; padding:0.65rem 0.85rem; border:1.5px solid var(--border-color); border-radius:10px; font-size:0.88rem; font-family:inherit; outline:none; resize:vertical; background:var(--bg-page); box-sizing:border-box;" onfocus="this.style.background='#FFF'; this.style.borderColor='#F97316';" onblur="this.style.background='#F8FAFC'; this.style.borderColor='#CBD5E1';"></textarea>
+            </div>
+
+            <!-- Optional Photo -->
+            <div style="margin-bottom:1.25rem;">
+                <label for="review_photo" style="font-size:0.85rem; font-weight:700; color:var(--text-main); display:block; margin-bottom:0.4rem;">Upload Photo <span style="font-weight:500; color:var(--text-muted);">(optional, max 2 MB)</span></label>
+                <input type="file" name="photo" id="review_photo" accept="image/jpeg,image/jpg,image/png,image/webp" onchange="previewReviewPhoto(this)" style="font-size:0.82rem; width:100%;">
+                <img id="review_photo_preview" src="" alt="Review photo preview" style="display:none; max-height:140px; border-radius:10px; border:1.5px solid var(--border-color); margin-top:0.6rem;">
+                <div id="review_photo_error" style="font-size:0.78rem; color:var(--text-danger); font-weight:600; margin-top:0.35rem; display:none;"></div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+                <button type="button" onclick="closeReviewModal()" class="btn btn-outline" style="padding:0.55rem 1.1rem; font-size:0.88rem;">
+                    Cancel
+                </button>
+                <button type="submit" class="btn" style="background:var(--warning-color); color:var(--text-inverse); font-weight:700; padding:0.55rem 1.25rem; font-size:0.88rem; border-radius:8px;">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Review
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// ── Rate & Review Product Modal (shared) ──────────────
+const REVIEW_STAR_LABELS = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+
+function openReviewModal(orderItemId, productName, imageUrl, orderNumber) {
+    const modal = document.getElementById('reviewModal');
+    if (!modal) return;
+    document.getElementById('review_order_item_id').value = orderItemId;
+    document.getElementById('review_product_name').textContent = productName || '';
+
+    const img = document.getElementById('review_product_image');
+    const icon = document.getElementById('review_product_icon');
+    if (img && icon) {
+        if (imageUrl) {
+            img.src = imageUrl;
+            img.style.display = 'block';
+            icon.style.display = 'none';
+        } else {
+            img.src = '';
+            img.style.display = 'none';
+            icon.style.display = 'block';
+        }
+    }
+
+    const orderLabel = document.getElementById('review_order_label');
+    if (orderLabel) orderLabel.textContent = orderNumber ? 'Order #' + orderNumber : '';
+
+    resetReviewForm();
+    modal.style.display = 'flex';
+}
+
+function closeReviewModal() {
+    const modal = document.getElementById('reviewModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function setReviewStars(rating) {
+    document.querySelectorAll('.review-star-icon').forEach(star => {
+        const s = parseInt(star.getAttribute('data-star'));
+        star.style.color = s <= rating ? '#F59E0B' : '#CBD5E1';
+        star.style.transform = s <= rating ? 'scale(1.1)' : 'scale(1)';
+    });
+    const input = document.getElementById('review_rating_input');
+    if (input) input.value = rating;
+    const label = document.getElementById('review_rating_label');
+    if (label) label.textContent = rating > 0 ? rating + '/5 — ' + REVIEW_STAR_LABELS[rating - 1] : 'Tap a star to rate (1 = Poor, 5 = Excellent)';
+    const err = document.getElementById('review_rating_error');
+    if (err) err.style.display = 'none';
+}
+
+function resetReviewForm() {
+    setReviewStars(0);
+    document.getElementById('review_rating_input').value = '';
+    const label = document.getElementById('review_rating_label');
+    if (label) label.textContent = 'Tap a star to rate (1 = Poor, 5 = Excellent)';
+    const comment = document.getElementById('review_comment');
+    if (comment) comment.value = '';
+    const photo = document.getElementById('review_photo');
+    if (photo) photo.value = '';
+    const preview = document.getElementById('review_photo_preview');
+    if (preview) preview.style.display = 'none';
+    const photoErr = document.getElementById('review_photo_error');
+    if (photoErr) photoErr.style.display = 'none';
+    // Render stars as inactive for a 0 rating
+    document.querySelectorAll('.review-star-icon').forEach(star => {
+        star.style.color = '#CBD5E1';
+        star.style.transform = 'scale(1)';
+    });
+}
+
+function previewReviewPhoto(input) {
+    const preview = document.getElementById('review_photo_preview');
+    const errBox = document.getElementById('review_photo_error');
+    if (errBox) errBox.style.display = 'none';
+    if (!input.files || !input.files.length || !preview) return;
+    const file = input.files[0];
+    if (file.size > 2 * 1024 * 1024) {
+        if (errBox) {
+            errBox.textContent = 'Photo must not exceed 2 MB. Please choose a smaller image.';
+            errBox.style.display = 'block';
+        }
+        input.value = '';
+        preview.style.display = 'none';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+function validateReviewForm(form) {
+    const rating = document.getElementById('review_rating_input').value;
+    if (!rating || parseInt(rating) < 1) {
+        const err = document.getElementById('review_rating_error');
+        if (err) err.style.display = 'block';
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+    }
+    const photo = document.getElementById('review_photo');
+    if (photo && photo.files.length && photo.files[0].size > 2 * 1024 * 1024) {
+        return false;
+    }
+    return true;
+}
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeReviewModal();
+});
+</script>
+    </main>
+</div>
+
+<button type="button" class="gs-back-to-top" id="gsBackToTop" aria-label="Back to top" title="Back to top">
+    <i class="fa-solid fa-arrow-up"></i>
+</button>
+
+                        </div>
+
+    <!-- Footer — hidden on customer dashboard, cart, admin, super-admin, auth (login/register), checkout, the catalog page, and the product detail page -->
+    
+    <!-- QUICK TRACK & TRACE ORDER MODAL -->
+    <div id="trackOrderModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+        <div class="tt-card">
+            <div class="tt-header">
+                <div class="tt-header-main">
+                    <div class="tt-icon-chip">
+                        <i class="fa-solid fa-magnifying-glass-location"></i>
+                    </div>
+                    <div>
+                        <h3 class="tt-title">Track &amp; Trace Order</h3>
+                        <p class="tt-subtitle">Enter your Grafika South order number for live status</p>
+                    </div>
+                </div>
+                <button type="button" class="tt-close" onclick="closeTrackOrderModal()" aria-label="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form action="http://127.0.0.1:8123/track-order" method="GET" class="tt-body" onsubmit="return handleTrackOrderSubmit(event)">
+                <label class="tt-label" for="quick_track_order_number">Order Number / Tracking ID <span class="tt-req">*</span></label>
+                <div class="tt-field">
+                    <i class="fa-solid fa-hashtag tt-field-icon"></i>
+                    <input type="text" id="quick_track_order_number" name="order_number" placeholder="e.g. GS-20260817-6CB93" required class="tt-input">
+                </div>
+
+                <div class="tt-note">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>You can find your order number on your receipt, invoice email, or order history (e.g. <code>GS-20260817-6CB93</code>).</span>
+                </div>
+
+                <button type="submit" class="tt-btn-primary"><i class="fa-solid fa-magnifying-glass"></i> Track Order Status</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- QUICK PRODUCT SEARCH MODAL -->
+    <div id="searchModal" onclick="if(event.target === this) closeSearchModal()" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 9999; align-items: flex-start; justify-content: center; padding: 1.5rem 1rem;">
+        <div style="background: var(--bg-surface); border-radius: var(--radius-lg); width: 100%; max-width: 520px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: 1px solid var(--border-color); overflow: hidden; animation: modalFadeIn 0.2s ease-out; margin-top: 8vh;">
+            <div style="background: var(--bg-inverse); padding: 1.15rem 1.35rem; color: var(--text-inverse); display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <div style="width: 34px; height: 34px; border-radius: 50%; background: rgba(0, 153, 255, 0.2); color: var(--brand-cyan-fg); display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-inverse); margin: 0;">Search Products &amp; Services</h3>
+                        <p style="font-size: 0.75rem; color: var(--p-ink-400); margin: 2px 0 0 0;">Find custom prints, shirts, PVC IDs, cards &amp; more</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeSearchModal()" style="background: none; border: none; color: var(--p-ink-400); font-size: 1.2rem; cursor: pointer; padding: 4px; border-radius: 50%; transition: color 0.15s;" onmouseover="this.style.color='#FFFFFF'" onmouseout="this.style.color='#94A3B8'">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form action="http://127.0.0.1:8123/products" method="GET" style="padding: 1.25rem;">
+                <div style="margin-bottom: 1rem;">
+                    <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 0.4rem;">
+                        Keyword / Product Name
+                    </label>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; color: var(--text-subtle); font-size: 0.95rem; pointer-events: none;"></i>
+                        <input type="text" id="quick_search_input" name="q" placeholder="Type to search (e.g. T-Shirt, PVC ID, Business Cards)..." value="" required style="width: 100%; padding: 0.8rem 1rem 0.8rem 2.6rem; border: 2px solid var(--input-border); border-radius: 12px; background: var(--input-bg); color: var(--input-text); font-size: 0.95rem; outline: none; transition: all 0.2s; box-sizing: border-box;" onfocus="this.style.borderColor='var(--accent-color)'; this.style.boxShadow='0 0 0 3px var(--accent-ring)'" onblur="this.style.borderColor='var(--input-border)'; this.style.boxShadow='none'">
+                    </div>
+                </div>
+
+                <!-- Popular Search Suggestions -->
+                <div style="margin-bottom: 1.25rem;">
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.45rem;">Popular Searches</span>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+                        <a href="http://127.0.0.1:8123/products?q=T-Shirt" style="font-size: 0.78rem; font-weight: 600; padding: 0.3rem 0.65rem; border-radius: 9999px; background: var(--bg-subtle); color: var(--text-muted); text-decoration: none; transition: all 0.15s;">T-Shirt</a>
+                        <a href="http://127.0.0.1:8123/products?q=PVC%20ID" style="font-size: 0.78rem; font-weight: 600; padding: 0.3rem 0.65rem; border-radius: 9999px; background: var(--bg-subtle); color: var(--text-muted); text-decoration: none; transition: all 0.15s;">PVC ID Card</a>
+                        <a href="http://127.0.0.1:8123/products?q=Business%20Cards" style="font-size: 0.78rem; font-weight: 600; padding: 0.3rem 0.65rem; border-radius: 9999px; background: var(--bg-subtle); color: var(--text-muted); text-decoration: none; transition: all 0.15s;">Business Cards</a>
+                        <a href="http://127.0.0.1:8123/products?q=Lamination" style="font-size: 0.78rem; font-weight: 600; padding: 0.3rem 0.65rem; border-radius: 9999px; background: var(--bg-subtle); color: var(--text-muted); text-decoration: none; transition: all 0.15s;">Lamination</a>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.6rem;">
+                    <button type="button" onclick="closeSearchModal()" class="btn btn-outline" style="padding: 0.55rem 1.1rem; font-size: 0.88rem; border-radius: 10px;">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="padding: 0.55rem 1.3rem; font-size: 0.88rem; border-radius: 10px;">
+                        <i class="fa-solid fa-magnifying-glass"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    function openSearchModal() {
+        const modal = document.getElementById('searchModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => {
+                const input = document.getElementById('quick_search_input');
+                if (input) input.focus();
+            }, 60);
+        } else {
+            window.location.href = "http://127.0.0.1:8123/products";
+        }
+    }
+
+    function closeSearchModal() {
+        const modal = document.getElementById('searchModal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    }
+
+    function openTrackOrderModal() {
+        const modal = document.getElementById('trackOrderModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                const input = document.getElementById('quick_track_order_number');
+                if (input) input.focus();
+            }, 50);
+        }
+    }
+
+    function closeTrackOrderModal() {
+        const modal = document.getElementById('trackOrderModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    function handleTrackOrderSubmit(e) {
+        const input = document.getElementById('quick_track_order_number');
+        if (input) {
+            let val = input.value.trim().replace(/^#/, '');
+            input.value = val;
+        }
+        return true;
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeTrackOrderModal();
+            closeSearchModal();
+        }
+    });
+
+    // Mobile Drawer Navigation Toggle Functions
+    function openMobileDrawer() {
+        const drawer = document.getElementById('mobileNavDrawer');
+        const overlay = document.getElementById('mobileDrawerOverlay');
+        const btn = document.getElementById('mobileMenuToggleBtn');
+        if (drawer && overlay) {
+            drawer.classList.add('is-open');
+            overlay.classList.add('is-open');
+            document.body.style.overflow = 'hidden';
+            if (btn) btn.setAttribute('aria-expanded', 'true');
+        }
+    }
+
+    function closeMobileDrawer() {
+        const drawer = document.getElementById('mobileNavDrawer');
+        const overlay = document.getElementById('mobileDrawerOverlay');
+        const btn = document.getElementById('mobileMenuToggleBtn');
+        if (drawer && overlay) {
+            drawer.classList.remove('is-open');
+            overlay.classList.remove('is-open');
+            document.body.style.overflow = '';
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuBtn = document.getElementById('mobileMenuToggleBtn');
+        const closeBtn = document.getElementById('mobileDrawerCloseBtn');
+        const overlay = document.getElementById('mobileDrawerOverlay');
+
+        if (menuBtn) {
+            menuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const drawer = document.getElementById('mobileNavDrawer');
+                if (drawer && drawer.classList.contains('is-open')) {
+                    closeMobileDrawer();
+                } else {
+                    openMobileDrawer();
+                }
+            });
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeMobileDrawer);
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', closeMobileDrawer);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeMobileDrawer();
+            }
+        });
+    });
+
+    // Click-to-toggle sidebar groups (Stocks): every click on the parent
+    // only opens/closes the submenu — it never navigates directly.
+    document.querySelectorAll('[data-nav-group] .admin-nav-parent').forEach(function (parent) {
+        parent.addEventListener('click', function (e) {
+            e.preventDefault();
+            var group = parent.closest('[data-nav-group]');
+            if (!group) return;
+            document.querySelectorAll('[data-nav-group].open').forEach(function (g) {
+                if (g !== group) g.classList.remove('open');
+            });
+            group.classList.toggle('open');
+        });
+    });
+    document.querySelectorAll('[data-nav-group] .admin-nav-subitem').forEach(function (sub) {
+        sub.addEventListener('click', function () {
+            sub.classList.add('nav-pressed');
+        });
+    });
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-nav-group]')) {
+            document.querySelectorAll('[data-nav-group].open').forEach(function (g) {
+                if (g.querySelector('.admin-nav-subitem.active')) return; // keep active section expanded
+                g.classList.remove('open');
+            });
+        }
+    });
+    </script>
+
+                
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const menuLinks = document.querySelectorAll('.customer-sidebar .sidebar-menu-item');
+
+        menuLinks.forEach(link => {
+            link.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    const targetEl = document.querySelector(href);
+                    if (targetEl) {
+                        const yOffset = -90;
+                        const y = targetEl.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                        window.scrollTo({ top: y, behavior: 'smooth' });
+
+                        menuLinks.forEach(item => item.classList.remove('active'));
+                        this.classList.add('active');
+                    }
+                }
+            });
+        });
+    });
+
+    /* Back to Top: fade in after scrolling, smooth scroll to top on click */
+    const backToTop = document.getElementById('gsBackToTop');
+    if (backToTop) {
+        const onScroll = function () {
+            backToTop.classList.toggle('is-visible', window.pageYOffset > 300);
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+        backToTop.addEventListener('click', function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+</script>
+</body>
+</html>

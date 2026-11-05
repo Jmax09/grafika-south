@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>theme seed</title>
+</head>
+<body>
+<script>
+    var q = new URLSearchParams(location.search);
+    var t = q.get('t');
+    try { localStorage.setItem('grafika-theme', t === 'dark' ? 'dark' : 'light'); } catch (e) {}
+    location.replace(q.get('p') || '/');
+</script>
+</body>
+</html>

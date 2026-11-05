@@ -1,0 +1,4269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="color-scheme" content="light dark">
+    <meta name="csrf-token" content="Aysnej9m5dMNwpcX1jQ5L7hMSKKhkzhFvo8WqpO8">
+    <title>Business Analytics &amp; Sales — Grafika South</title>
+
+    <link rel="icon" type="image/png" href="http://127.0.0.1:8123/images/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Alpine.js (drives admin modals & dynamic purchase-order rows) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Tailwind CSS (Preflight Disabled to preserve existing custom styles) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            corePlugins: {
+                preflight: false,
+            },
+            theme: {
+                extend: {
+                    // Neutral scales resolve to the theme tokens so utility
+                    // markup (bg-gray-50, text-slate-400, border-slate-200)
+                    // themes together with the rest of the UI.
+                    // 900/950 stay literal - they are used as dark backdrops.
+                    colors: {
+                        slate: {
+                            50: 'var(--bg-surface-2)',
+                            100: 'var(--bg-subtle)',
+                            200: 'var(--border-color)',
+                            300: 'var(--border-strong)',
+                            400: 'var(--text-subtle)',
+                            500: 'var(--text-muted)',
+                            600: 'var(--text-muted)',
+                            700: 'var(--text-main)',
+                            800: 'var(--text-main)',
+                        },
+                        gray: {
+                            50: 'var(--bg-surface-2)',
+                            100: 'var(--bg-subtle)',
+                            200: 'var(--border-color)',
+                            300: 'var(--border-strong)',
+                            400: 'var(--text-subtle)',
+                            500: 'var(--text-muted)',
+                            600: 'var(--text-muted)',
+                            700: 'var(--text-main)',
+                            800: 'var(--text-main)',
+                        },
+                    },
+                },
+            },
+        }
+    </script>
+
+    <script>
+    (function () {
+        var root = document.documentElement;
+        var STORAGE_KEY = 'grafika-theme';
+        var mql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+        function readStored() {
+            try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
+        }
+
+        function syncToggles(dark) {
+            var buttons = document.querySelectorAll('[data-theme-toggle]');
+            for (var i = 0; i < buttons.length; i++) {
+                var label = dark ? 'Switch to light theme' : 'Switch to dark theme';
+                buttons[i].setAttribute('aria-pressed', dark ? 'true' : 'false');
+                buttons[i].setAttribute('aria-label', label);
+                buttons[i].setAttribute('title', label);
+            }
+        }
+
+        function apply(mode) {
+            var dark = mode === 'dark';
+            root.classList.toggle('theme-dark', dark);
+            root.style.colorScheme = dark ? 'dark' : 'light';
+            syncToggles(dark);
+        }
+
+        // 1) Resolve the mode BEFORE first paint (no flash of the wrong theme).
+        var stored = readStored();
+        var prefersDark = mql ? mql.matches : false;
+        apply(stored === 'dark' || (stored !== 'light' && prefersDark) ? 'dark' : 'light');
+
+        // 1b) This script runs in <head>, before the toggle buttons exist.
+        //     Re-sync their ARIA state once the DOM is parsed.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () {
+                syncToggles(root.classList.contains('theme-dark'));
+            });
+        } else {
+            syncToggles(root.classList.contains('theme-dark'));
+        }
+
+        // 2) Toggle handler — delegated so it covers every button instance.
+        document.addEventListener('click', function (e) {
+            var button = e.target.closest ? e.target.closest('[data-theme-toggle]') : null;
+            if (!button) return;
+            var next = root.classList.contains('theme-dark') ? 'light' : 'dark';
+            apply(next);
+            try { localStorage.setItem(STORAGE_KEY, next); } catch (err) {}
+        });
+
+        // 3) Follow the OS preference only while the user has not chosen explicitly.
+        if (mql && mql.addEventListener) {
+            mql.addEventListener('change', function (e) {
+                if (!readStored()) apply(e.matches ? 'dark' : 'light');
+            });
+        }
+    })();
+</script>
+
+    <style>
+        :root {
+            /* ---- Legacy CMYK aliases (kept: other views still use them) ---- */
+            --cmyk-cyan: #0099FF;
+            --cmyk-cyan-hover: #0080FF;
+            --cmyk-cyan-light: #E6F4FF;
+
+            --cmyk-magenta: #EC008C;
+            --cmyk-magenta-hover: #C80075;
+            --cmyk-magenta-light: #FDE8F5;
+
+            --cmyk-yellow: #EAB308;
+            --cmyk-yellow-dark: #CA8A04;
+            --cmyk-yellow-light: #FEF9C3;
+
+            --cmyk-key: #0F172A;
+            --cmyk-key-light: #1E293B;
+        }
+
+        :root {
+    /* ---- Layer 1: PRIMITIVES (raw values) ---- */
+    --p-white: #FFFFFF;
+
+    --p-ink-950: #0B1120;
+    --p-ink-900: #0F172A;
+    --p-ink-850: #172033;
+    --p-ink-800: #1E293B;
+    --p-ink-700: #334155;
+    --p-ink-600: #475569;
+    --p-ink-500: #64748B;
+    --p-ink-400: #94A3B8;
+    --p-ink-300: #CBD5E1;
+    --p-ink-200: #E2E8F0;
+    --p-ink-100: #F1F5F9;
+    --p-ink-050: #F8FAFC;
+
+    --p-cyan-050: #E6F4FF;
+    --p-cyan-100: #BAE6FD;
+    --p-cyan-300: #7DD3FC;
+    --p-cyan-400: #38BDF8;
+    --p-cyan-500: #0099FF;
+    --p-cyan-600: #0080FF;
+
+    --p-magenta-050: #FDE8F5;
+    --p-magenta-100: #FBCFE8;
+    --p-magenta-400: #F472B6;
+    --p-magenta-500: #EC008C;
+    --p-magenta-600: #C80075;
+
+    --p-yellow-050: #FEF9C3;
+    --p-yellow-100: #FDE047;
+    --p-yellow-500: #EAB308;
+    --p-yellow-600: #CA8A04;
+
+    --p-violet-050: #F5F3FF;
+    --p-violet-100: #DDD6FE;
+    --p-violet-500: #7C3AED;
+    --p-violet-600: #6D28D9;
+
+    --p-green-050: #F0FDF4;
+    --p-green-100: #BBF7D0;
+    --p-green-500: #22C55E;
+    --p-green-600: #16A34A;
+    --p-green-700: #15803D;
+    --p-green-800: #14532D;
+
+    --p-red-050: #FEF2F2;
+    --p-red-100: #FEE2E2;
+    --p-red-500: #EF4444;
+    --p-red-600: #DC2626;
+    --p-red-700: #B91C1C;
+    --p-red-800: #991B1B;
+
+    --p-amber-050: #FEF3C7;
+    --p-amber-100: #FDE68A;
+    --p-amber-500: #F59E0B;
+    --p-amber-600: #D97706;
+    --p-amber-700: #B45309;
+    --p-amber-800: #92400E;
+
+    --p-orange-050: #FFF7ED;
+    --p-orange-100: #FED7AA;
+    --p-orange-500: #EA580C;
+    --p-orange-600: #C2410C;
+    --p-orange-700: #9A3412;
+
+    --p-gray-050: #F9FAFB;
+    --p-gray-100: #F3F4F6;
+    --p-gray-200: #E5E7EB;
+    --p-gray-300: #D1D5DB;
+    --p-gray-400: #9CA3AF;
+    --p-gray-500: #6B7280;
+    --p-gray-600: #4B5563;
+    --p-gray-700: #374151;
+    --p-gray-800: #1F2937;
+    --p-gray-900: #111827;
+
+    /* ---- Layer 2: SEMANTIC (light theme is the default) ---- */
+    --accent-light: var(--p-cyan-050);
+    --primary-dark: var(--cmyk-key);
+
+    --bg-page: var(--p-ink-050);
+    --bg-surface: var(--p-white);
+    --bg-surface-2: #FBFCFD;
+    --bg-subtle: var(--p-ink-100);
+    --bg-stripe: var(--p-ink-050);
+    --bg-elevated: var(--p-white);
+    --bg-inverse: var(--p-ink-900);
+    --bg-overlay: rgba(15, 23, 42, 0.5);
+
+    --text-main: var(--p-ink-900);
+    --text-muted: var(--p-ink-500);
+    --text-subtle: var(--p-ink-400);
+    --text-disabled: var(--p-ink-300);
+    --text-inverse: var(--p-white);
+    --text-accent: var(--p-cyan-600);
+    --text-success: var(--p-green-700);
+    --text-warning: var(--p-amber-700);
+    --text-danger: var(--p-red-700);
+    --text-magenta: var(--p-magenta-600);
+    --text-violet: var(--p-violet-600);
+
+    --border-color: var(--p-ink-200);
+    --border-strong: var(--p-ink-300);
+    --border-accent: var(--p-cyan-500);
+
+    --accent-color: var(--p-cyan-500);
+    --accent-hover: var(--p-cyan-600);
+    --accent-soft: var(--p-cyan-050);
+    --accent-contrast: var(--p-white);
+    --accent-ring: rgba(0, 153, 255, 0.35);
+
+    --success-color: var(--p-green-600);
+    --success-soft: var(--p-green-050);
+    --success-border: var(--p-green-100);
+
+    --warning-color: var(--p-amber-600);
+    --warning-soft: var(--p-amber-050);
+    --warning-border: var(--p-amber-100);
+
+    --danger-color: var(--p-red-600);
+    --danger-soft: var(--p-red-050);
+    --danger-border: var(--p-red-100);
+
+    --info-color: var(--p-cyan-600);
+    --info-soft: var(--p-cyan-050);
+    --info-border: var(--p-cyan-100);
+
+    --brand-cyan-fg: var(--p-cyan-500);
+    --brand-cyan-soft: var(--p-cyan-050);
+    --brand-magenta-fg: var(--p-magenta-500);
+    --brand-magenta-soft: var(--p-magenta-050);
+    --brand-yellow-fg: var(--p-yellow-600);
+    --brand-yellow-soft: var(--p-yellow-050);
+    --brand-violet-fg: var(--p-violet-500);
+    --brand-violet-soft: var(--p-violet-050);
+    --brand-key-fg: var(--p-ink-800);
+
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 4px 12px -4px rgba(15, 23, 42, 0.10);
+    --shadow-lg: 0 16px 40px -16px rgba(15, 23, 42, 0.18);
+
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-pill: 9999px;
+
+    /* ---- Layer 3: COMPONENT ---- */
+    --btn-primary-bg: var(--accent-color);
+    --btn-primary-bg-hover: var(--accent-hover);
+    --btn-primary-text: var(--accent-contrast);
+    --btn-outline-border: var(--border-strong);
+    --btn-outline-text: var(--text-main);
+    --btn-outline-bg-hover: var(--bg-subtle);
+    --btn-ghost-text: var(--text-main);
+    --btn-ghost-bg-hover: var(--bg-subtle);
+
+    --card-bg: var(--bg-surface);
+    --card-border: var(--border-color);
+    --card-shadow: var(--shadow-sm);
+    --card-shadow-hover: var(--shadow-md);
+
+    /* Header chrome. The storefront header is a glass layer, the admin
+       topbar is opaque — they share the same colour language. */
+    --header-bg: rgba(255, 255, 255, 0.88);
+    --header-solid: var(--p-white);
+    --header-border: var(--border-color);
+    --header-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.07);
+    --header-text: var(--text-main);
+    --header-text-muted: var(--text-muted);
+    --header-hover-bg: var(--bg-subtle);
+    --header-active-bg: var(--accent-soft);
+    --header-control-bg: var(--bg-surface);
+    --header-control-border: var(--border-strong);
+    --header-control-text: var(--text-muted);
+    --header-brand-chip: transparent;
+
+    --input-bg: var(--bg-surface);
+    --input-border: var(--border-strong);
+    --input-text: var(--text-main);
+    --input-placeholder: var(--p-ink-400);
+
+    --focus-ring: 0 0 0 3px var(--accent-ring);
+}
+
+/* ---- Layer 2 overrides: DARK theme ---- */
+html.theme-dark {
+    --bg-page: #080D18;
+    --bg-surface: #0E1626;
+    --bg-surface-2: #131D31;
+    --bg-subtle: #18233A;
+    --bg-stripe: #131D31;
+    --bg-elevated: #16223A;
+    --bg-inverse: var(--p-white);
+    --bg-overlay: rgba(2, 6, 16, 0.68);
+
+    /* The key black was a foreground colour; on a dark surface it has to
+       become the light text colour instead. */
+    --primary-dark: var(--text-main);
+
+    --text-main: #E6EDF7;
+    --text-muted: #94A3B8;
+    --text-subtle: #64748B;
+    --text-disabled: #475569;
+    --text-inverse: var(--p-ink-900);
+    --text-accent: var(--p-cyan-400);
+    --text-success: #4ADE80;
+    --text-warning: #FBBF24;
+    --text-danger: #F87171;
+    --text-magenta: #F472B6;
+    --text-violet: #A78BFA;
+
+    --border-color: #1E293B;
+    --border-strong: #334155;
+    --border-accent: var(--p-cyan-400);
+
+    --accent-color: var(--p-cyan-400);
+    --accent-hover: var(--p-cyan-500);
+    --accent-soft: rgba(56, 189, 248, 0.12);
+    --accent-contrast: #04121F;
+    --accent-ring: rgba(56, 189, 248, 0.45);
+
+    --success-color: #4ADE80;
+    --success-soft: rgba(34, 197, 94, 0.14);
+    --success-border: rgba(34, 197, 94, 0.32);
+
+    --warning-color: #FBBF24;
+    --warning-soft: rgba(245, 158, 11, 0.14);
+    --warning-border: rgba(245, 158, 11, 0.32);
+
+    --danger-color: #F87171;
+    --danger-soft: rgba(239, 68, 68, 0.14);
+    --danger-border: rgba(239, 68, 68, 0.32);
+
+    --info-color: var(--p-cyan-400);
+    --info-soft: rgba(56, 189, 248, 0.12);
+    --info-border: rgba(56, 189, 248, 0.3);
+
+    /* Soft brand tints become translucent so CMYK chips do not glare on dark. */
+    --p-cyan-050: rgba(56, 189, 248, 0.14);
+    --p-cyan-100: rgba(56, 189, 248, 0.26);
+    --p-magenta-050: rgba(236, 0, 140, 0.16);
+    --p-magenta-100: rgba(236, 0, 140, 0.28);
+    --p-yellow-050: rgba(234, 179, 8, 0.16);
+    --p-yellow-100: rgba(234, 179, 8, 0.28);
+    --p-violet-050: rgba(124, 58, 237, 0.16);
+    --p-violet-100: rgba(124, 58, 237, 0.28);
+    --p-green-050: rgba(34, 197, 94, 0.14);
+    --p-green-100: rgba(34, 197, 94, 0.28);
+    --p-red-050: rgba(239, 68, 68, 0.14);
+    --p-red-100: rgba(239, 68, 68, 0.28);
+    --p-amber-050: rgba(245, 158, 11, 0.14);
+    --p-amber-100: rgba(245, 158, 11, 0.28);
+    --p-orange-050: rgba(234, 88, 12, 0.14);
+    --p-orange-100: rgba(234, 88, 12, 0.28);
+
+    --brand-cyan-fg: var(--p-cyan-400);
+    --brand-cyan-soft: rgba(56, 189, 248, 0.12);
+    --brand-magenta-fg: #F472B6;
+    --brand-magenta-soft: rgba(236, 0, 140, 0.16);
+    --brand-yellow-fg: var(--p-yellow-500);
+    --brand-yellow-soft: rgba(234, 179, 8, 0.16);
+    --brand-violet-fg: #A78BFA;
+    --brand-violet-soft: rgba(124, 58, 237, 0.16);
+    --brand-key-fg: var(--p-ink-300);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40);
+    --shadow-md: 0 4px 14px -4px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 18px 44px -18px rgba(0, 0, 0, 0.70);
+
+    /* Dark header is a deep brand blue rather than near-black, so the chrome
+       reads as blue while keeping white text at ~8.5:1. */
+    --header-bg: rgba(12, 74, 110, 0.92);
+    --header-solid: #0C4A6E;
+    --header-border: rgba(255, 255, 255, 0.16);
+    --header-shadow: 0 4px 20px -2px rgba(3, 20, 36, 0.55);
+    --header-text: #FFFFFF;
+    --header-text-muted: rgba(255, 255, 255, 0.78);
+    --header-hover-bg: rgba(255, 255, 255, 0.16);
+    --header-active-bg: rgba(255, 255, 255, 0.22);
+    --header-control-bg: rgba(255, 255, 255, 0.12);
+    --header-control-border: rgba(255, 255, 255, 0.26);
+    --header-control-text: rgba(255, 255, 255, 0.9);
+    --header-brand-chip: #FFFFFF;
+
+    --input-placeholder: #64748B;
+}
+
+/* ---- Global focus ring (visible for keyboard navigation) ---- */
+:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* ============================================================
+   Tailwind colour-utility overrides
+   The Tailwind CDN injects literal colours, which would ignore the
+   token layer. These re-point the remaining surface utilities at the
+   theme tokens so utility markup themes with everything else.
+   ============================================================ */
+html.theme-dark .bg-white { background-color: var(--bg-surface); }
+html.theme-dark .border-black { border-color: var(--border-strong); }
+html.theme-dark .bg-gray-50 { background-color: var(--bg-surface-2); }
+html.theme-dark .bg-slate-50 { background-color: var(--bg-surface-2); }
+html.theme-dark .bg-sky-50 { background-color: var(--accent-soft); }
+html.theme-dark .bg-rose-50 { background-color: var(--danger-soft); }
+html.theme-dark .bg-emerald-50 { background-color: var(--success-soft); }
+html.theme-dark .bg-amber-50 { background-color: var(--warning-soft); }
+html.theme-dark .border-sky-200 { border-color: var(--info-border); }
+html.theme-dark .border-rose-200 { border-color: var(--danger-border); }
+html.theme-dark .border-emerald-200 { border-color: var(--success-border); }
+html.theme-dark .border-amber-200 { border-color: var(--warning-border); }
+html.theme-dark .text-sky-600, html.theme-dark .text-sky-700 { color: var(--accent-color); }
+html.theme-dark .text-sky-800, html.theme-dark .text-sky-900 { color: var(--accent-hover); }
+html.theme-dark .text-rose-600, html.theme-dark .text-rose-700, html.theme-dark .text-rose-800 { color: var(--text-danger); }
+html.theme-dark .text-emerald-600, html.theme-dark .text-emerald-700, html.theme-dark .text-emerald-800 { color: var(--text-success); }
+html.theme-dark .text-amber-600, html.theme-dark .text-amber-700, html.theme-dark .text-amber-800 { color: var(--text-warning); }
+html.theme-dark .text-red-600, html.theme-dark .text-red-700, html.theme-dark .text-red-800 { color: var(--text-danger); }
+
+/* ===== Theme toggle button (partials.theme-toggle) ===== */
+.theme-toggle {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-strong);
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.theme-toggle:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent-color);
+    color: var(--accent-hover);
+}
+.theme-toggle__icons {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+.theme-toggle__icon {
+    position: absolute;
+    inset: 0;
+    width: 20px;
+    height: 20px;
+    transition: opacity 0.2s ease, transform 0.25s ease;
+}
+/* Light theme shows the moon (the action is "go dark"); dark theme shows the sun. */
+.theme-toggle__icon--moon { opacity: 1; transform: scale(1) rotate(0); }
+.theme-toggle__icon--sun  { opacity: 0; transform: scale(0.6) rotate(-30deg); }
+html.theme-dark .theme-toggle__icon--moon { opacity: 0; transform: scale(0.6) rotate(30deg); }
+html.theme-dark .theme-toggle__icon--sun  { opacity: 1; transform: scale(1) rotate(0); }
+
+/* Drawer variant — a full-width labelled row */
+.theme-toggle--drawer {
+    width: 100%;
+    height: 44px;
+    justify-content: flex-start;
+    gap: 0.85rem;
+    padding: 0 0.95rem;
+    background: transparent;
+    border-color: var(--border-color);
+}
+.theme-toggle--drawer .theme-toggle__label {
+    font-size: 0.94rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+        html {
+            max-width: 100vw;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        [x-cloak] { display: none !important; }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        a:hover {
+            text-decoration: none;
+        }
+
+        button {
+            font-family: inherit;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1, h2, h3, h4, h5, h6 { font-family: 'Outfit', sans-serif; }
+
+        /* â”€â”€ Top navbar â”€â”€ */
+        .admin-topbar {
+            background: var(--header-solid);
+            border-bottom: 1px solid var(--header-border);
+            padding: 0 2rem;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            width: 100%;
+            flex-shrink: 0;
+            box-shadow: var(--header-shadow);
+            transition: box-shadow 0.25s ease;
+        }
+
+        /* Header-scoped palette — in dark mode the topbar is brand blue, so
+           its links and controls need light-on-blue colours. */
+        .admin-topbar .nav-link-item { color: var(--header-text-muted); }
+        .admin-topbar .nav-link-item i { color: var(--header-text-muted); }
+        .admin-topbar .nav-link-item:hover {
+            background-color: var(--header-hover-bg);
+            color: var(--header-text);
+        }
+        .admin-topbar .nav-link-item:hover i { color: var(--header-text); }
+        .admin-topbar .nav-link-item.active {
+            background-color: var(--header-active-bg);
+            color: var(--header-text);
+        }
+        .admin-topbar .nav-link-item.active i { color: var(--header-text); }
+        .admin-topbar .nav-divider { background-color: var(--header-border); }
+        .admin-topbar .theme-toggle {
+            background: var(--header-control-bg);
+            border-color: var(--header-control-border);
+            color: var(--header-control-text);
+        }
+        .admin-topbar .theme-toggle:hover {
+            background: var(--header-hover-bg);
+            border-color: var(--header-control-border);
+            color: var(--header-text);
+        }
+        /* The wordmark is an opaque JPG, so on a blue header it needs a chip. */
+        .admin-topbar-brand img {
+            background: var(--header-brand-chip);
+            border-radius: 9px;
+            box-sizing: content-box;
+            padding: 0;
+            transition: background-color 0.25s ease, box-shadow 0.25s ease;
+        }
+        html.theme-dark .admin-topbar-brand img {
+            padding: 4px 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+        }
+
+        .admin-topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+
+        .admin-topbar-brand img {
+            height: 34px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .nav-divider {
+            width: 1px;
+            height: 22px;
+            background: var(--text-disabled);
+            margin: 0 0.35rem;
+        }
+
+        .nav-link-item {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 600;
+            padding: 0.45rem 0.8rem;
+            border-radius: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            white-space: nowrap;
+            line-height: 1;
+        }
+
+        .nav-link-item i {
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link-item:hover {
+            background: var(--accent-soft);
+            color: var(--text-accent);
+            transform: translateY(-1px);
+        }
+
+        .nav-link-item:hover i {
+            color: var(--text-accent);
+            transform: scale(1.15);
+        }
+
+        .nav-link-item.active {
+            background: var(--accent-soft);
+            color: var(--text-accent);
+            font-weight: 700;
+        }
+
+        .nav-link-item.active i {
+            color: var(--text-accent);
+        }
+
+        .nav-cart-badge {
+            background: var(--brand-magenta-fg);
+            color: var(--text-inverse);
+            font-size: 0.72rem;
+            font-weight: 800;
+            min-width: 19px;
+            height: 19px;
+            padding: 0 5px;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            box-shadow: 0 2px 6px rgba(236, 0, 140, 0.35);
+            transition: transform 0.2s ease;
+            margin-left: 2px;
+        }
+
+        .nav-link-item:hover .nav-cart-badge {
+            transform: scale(1.12);
+        }
+
+        /* â”€â”€ Portal layout â”€â”€ */
+        .admin-portal-layout {
+            display: flex;
+            align-items: flex-start;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* â”€â”€ Sidebar â”€â”€ */
+        .admin-sidebar {
+            width: 180px;
+            flex-shrink: 0;
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 40;
+        }
+
+        .admin-sidebar-header {
+            padding: 0.7rem 0.85rem 0.6rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .admin-sidebar-header .role-name {
+            font-size: 0.67rem;
+            font-weight: 800;
+            color: var(--text-subtle);
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .admin-sidebar-header .user-name {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+        }
+
+        .admin-sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.05rem;
+            padding: 0.5rem 0.5rem 0;
+        }
+
+        .admin-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.5rem 0.65rem;
+            border-radius: 8px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.13s ease;
+            border-right: 3px solid transparent;
+            line-height: 1.3;
+        }
+
+        .admin-nav-item i {
+            width: 15px;
+            text-align: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            color: var(--text-subtle);
+            transition: color 0.13s;
+        }
+
+        .admin-nav-item:hover { background: var(--bg-subtle); color: var(--text-main); border-right-color: var(--border-color); }
+        .admin-nav-item:hover i { color: var(--text-accent); }
+        .admin-nav-item.active {
+            background: var(--accent-color);
+            color: var(--text-inverse);
+            font-weight: 700;
+            border-right-color: transparent;
+        }
+        .admin-nav-item.active i { color: var(--text-inverse); }
+        .admin-nav-item.active:hover { background: var(--accent-color); color: var(--text-inverse); border-right-color: transparent; }
+        .admin-nav-item.active:hover i { color: var(--text-inverse); }
+
+        .admin-nav-divider { height: 1px; background: var(--bg-subtle); margin: 0.4rem 0.25rem; }
+
+        /* Click-to-toggle dropdown (Stocks group) */
+        .admin-nav-group { position: relative; }
+        .admin-nav-parent .admin-nav-caret { margin-left: auto; font-size: 0.62rem; color: var(--text-subtle); transition: transform 0.15s ease; width: auto; }
+        .admin-nav-submenu {
+            display: none;
+            flex-direction: column;
+            gap: 0.05rem;
+            margin: 0.1rem 0 0 0.65rem;
+            padding-left: 0.55rem;
+            border-left: 2px solid var(--border-color);
+        }
+        /* Click-to-toggle: Stocks parent opens/closes the submenu (kept open while inside a child page) */
+        .admin-nav-group.open .admin-nav-submenu { display: flex; }
+        .admin-nav-group.open .admin-nav-caret { transform: rotate(180deg); }
+        /* Opened parent lights up blue like an active item */
+        .admin-nav-group.open .admin-nav-parent { background: var(--accent-soft); color: var(--text-accent); }
+        .admin-nav-group.open .admin-nav-parent i { color: var(--text-accent); }
+        .admin-nav-group.open .admin-nav-parent.active { background: var(--accent-color); color: var(--text-inverse); }
+        .admin-nav-group.open .admin-nav-parent.active i { color: var(--text-inverse); }
+        .admin-nav-subitem {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.78rem;
+            line-height: 1.3;
+            transition: all 0.13s ease;
+        }
+        .admin-nav-subitem i { width: 13px; font-size: 0.72rem; color: var(--text-subtle); flex-shrink: 0; }
+        .admin-nav-subitem:hover { background: var(--bg-subtle); color: var(--text-main); }
+        .admin-nav-subitem:hover i { color: var(--text-accent); }
+        .admin-nav-subitem.active { background: var(--accent-soft); color: var(--text-accent); }
+        .admin-nav-subitem.active i { color: var(--text-accent); }
+        /* Momentary blue flash when a submenu link is clicked (before navigation) */
+        .admin-nav-subitem.nav-pressed { background: var(--accent-color); color: var(--text-inverse); }
+        .admin-nav-subitem.nav-pressed i { color: var(--text-inverse); }
+
+        .admin-nav-item.logout-item { color: var(--text-danger); }
+        .admin-nav-item.logout-item i { color: var(--text-danger); }
+        .admin-nav-item.logout-item:hover { background: var(--danger-soft); color: var(--text-danger); border-right-color: var(--danger-border); }
+        .admin-nav-item.logout-item:hover i { color: var(--text-danger); }
+
+        .admin-sidebar-logout-wrap {
+            padding: 0.5rem 0.5rem 0.75rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* â”€â”€ Main content â”€â”€ */
+        .admin-main-content {
+            flex: 1;
+            min-width: 0;
+            padding: 1.75rem 2rem;
+        }
+
+        /* â”€â”€ Shared utility â”€â”€ */
+        .card {
+            background: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            text-decoration: none !important;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            text-decoration: none !important;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: var(--text-inverse);
+            box-shadow: 0 1px 2px rgba(0, 153, 255, 0.2);
+        }
+        .btn-primary:hover {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: var(--text-inverse);
+        }
+        .btn-magenta { background-color: var(--brand-magenta-fg); border-color: var(--brand-magenta-fg); color: var(--text-inverse); }
+        .btn-magenta:hover { background-color: var(--brand-magenta-fg); border-color: var(--brand-magenta-fg); }
+        .btn-yellow { background-color: var(--warning-color); border-color: var(--warning-color); color: var(--text-main); font-weight: 700; }
+        .btn-yellow:hover { background-color: var(--warning-color); border-color: var(--warning-color); color: var(--text-inverse); }
+        .btn-outline {
+            background-color: var(--bg-surface);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+        .btn-outline:hover {
+            background-color: var(--bg-page);
+            border-color: var(--accent-color);
+            color: var(--text-accent);
+        }
+        .btn-outline i {
+            color: var(--text-muted);
+            transition: color 0.15s ease;
+        }
+        .btn-outline:hover i {
+            color: var(--text-accent);
+        }
+
+        .alert {
+            padding: 0.9rem 1.2rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1.25rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .alert-success { background: var(--accent-soft); color: var(--text-accent); border: 1px solid var(--accent-color); }
+        .alert-error { background: var(--brand-magenta-soft); color: var(--text-magenta); border: 1px solid var(--brand-magenta-soft); }
+
+        /* ── Toast notifications ── */
+        #toast-container {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            pointer-events: none;
+        }
+        .toast {
+            pointer-events: all;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.875rem 1rem;
+            border-radius: 14px;
+            min-width: 280px;
+            max-width: 380px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08);
+            font-size: 0.875rem;
+            font-weight: 500;
+            line-height: 1.4;
+            animation: toastIn 0.3s cubic-bezier(.21,1.02,.73,1) forwards;
+        }
+        .toast.hiding { animation: toastOut 0.25s ease forwards; }
+        .toast-success { background: var(--bg-surface); border-left: 4px solid var(--success-color); color: var(--text-main); }
+        .toast-warning { background: var(--bg-surface); border-left: 4px solid var(--warning-color); color: var(--text-main); }
+        .toast-error   { background: var(--bg-surface); border-left: 4px solid var(--danger-color); color: var(--text-main); }
+        .toast-icon { flex-shrink: 0; width: 1.75rem; height: 1.75rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; margin-top: 0.05rem; }
+        .toast-success .toast-icon { background: var(--success-soft); color: var(--text-success); }
+        .toast-warning .toast-icon { background: var(--warning-soft); color: var(--text-warning); }
+        .toast-error   .toast-icon { background: var(--danger-soft); color: var(--text-danger); }
+        .toast-close { margin-left: auto; flex-shrink: 0; background: none; border: none; color: var(--text-subtle); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 0 0 0.5rem; }
+        .toast-close:hover { color: var(--text-muted); }
+        @keyframes toastIn  { from { opacity: 0; transform: translateX(2rem) scale(0.95); } to { opacity: 1; transform: translateX(0) scale(1); } }
+        @keyframes toastOut { from { opacity: 1; transform: translateX(0); }               to { opacity: 0; transform: translateX(2rem); } }
+
+        .role-badge {
+            display: inline-block;
+            padding: 0.2rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-super-admin { background: var(--brand-magenta-fg); color: var(--text-inverse); }
+        .badge-admin { background: var(--accent-color); color: var(--text-inverse); }
+
+        /* Modal Backdrop & Container */
+        .edit-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .edit-modal-backdrop.active {
+            display: flex;
+        }
+
+        .edit-modal-box {
+            background: var(--bg-surface);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 550px;
+            max-height: calc(100vh - 2rem);
+            overflow-y: auto;
+            margin: auto;
+            padding: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            position: relative;
+        }
+
+        @media (max-width: 992px) {
+            /* The sidebar carries Tailwind utilities (sticky / top-[60px] /
+               h-[calc(100vh-60px)] / overflow-y-auto) that the runtime CDN
+               injects after this stylesheet, so the overrides below need
+               !important to actually win.
+               align-items must become stretch here: with flex-direction:column the
+               cross axis is horizontal, so flex-start would size the content to
+               its intrinsic width and push it off-screen on narrow viewports.
+               flex:1 (basis 0%) also collapses to zero height in a column, so
+               the content needs to size itself here. */
+            .admin-portal-layout { flex-direction: column !important; min-height: auto !important; align-items: stretch !important; }
+            .admin-sidebar {
+                width: 100% !important;
+                position: static !important;
+                height: auto !important;
+                border-right: none !important;
+                border-bottom: 1px solid var(--border-color);
+                display: flex;
+                align-items: center;
+                gap: 0.3rem;
+                overflow-x: auto;
+                scrollbar-width: thin;
+                -webkit-overflow-scrolling: touch;
+            }
+            .admin-main-content { flex: 0 0 auto !important; padding: 1.25rem 1rem; width: 100%; max-width: 100%; }
+
+            /* ── Mobile: turn the vertical sidebar into a horizontal scroll strip
+                   so the page content is reachable without scrolling past the
+                   entire menu first. ── */
+            .admin-sidebar {
+                display: flex;
+                align-items: center;
+                gap: 0.3rem;
+                overflow-x: auto;
+                scrollbar-width: thin;
+                -webkit-overflow-scrolling: touch;
+            }
+            .admin-sidebar-header { display: none; }
+            .admin-sidebar-nav {
+                flex-direction: row;
+                align-items: center;
+                gap: 0.25rem;
+                padding: 0.5rem;
+                overflow: visible;
+            }
+            .admin-nav-item {
+                white-space: nowrap;
+                border-right: none;
+                border-bottom: 3px solid transparent;
+                padding: 0.45rem 0.6rem;
+            }
+            .admin-nav-item:hover { border-right-color: transparent; border-bottom-color: var(--border-color); }
+            .admin-nav-item.active,
+            .admin-nav-item.active:hover { border-bottom-color: transparent; }
+            .admin-nav-item.logout-item:hover { border-right-color: transparent; border-bottom-color: var(--danger-border); }
+            .admin-nav-divider { display: none; }
+
+            /* The Stocks submenu is a hover dropdown on desktop — on touch
+               devices there is no hover, so reveal the items inline. */
+            .admin-nav-group { position: static; display: flex; align-items: center; }
+            .admin-nav-group .admin-nav-submenu {
+                display: flex !important;
+                flex-direction: row;
+                gap: 0.2rem;
+                margin: 0;
+                padding: 0;
+                border-left: none;
+            }
+            .admin-nav-parent .admin-nav-caret { display: none; }
+            .admin-nav-subitem { white-space: nowrap; }
+
+            .admin-sidebar-logout-wrap {
+                padding: 0.5rem 0.5rem 0.5rem 0;
+                border-top: none;
+                flex-shrink: 0;
+            }
+        }
+
+        /* Suppress native browser password reveal/clear icons so custom eye toggles aren't duplicated */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear,
+        input[type="password"]::-webkit-contacts-auto-fill-button,
+        input[type="password"]::-webkit-credentials-auto-fill-button {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+    </style>
+
+    <style>
+/* ══════════════════════════════════════════════════════════════════════
+   EXECUTIVE DESIGN SYSTEM — Grafika South "Sales & Operations"
+   Brand: Cyan #0099FF · Magenta #EC008C · Yellow #EAB308 · Slate #0F172A
+   ══════════════════════════════════════════════════════════════════════ */
+.gs-analytics {
+    --gs-cyan: #0099FF;
+    --gs-cyan-hover: #0080FF;
+    --gs-cyan-light: #E6F4FF;
+    --gs-cyan-border: #BAE0FF;
+    --gs-magenta: #EC008C;
+    --gs-magenta-light: #FDE8F5;
+    --gs-magenta-border: #FBCFE8;
+    --gs-amber: #F59E0B;
+    --gs-amber-light: #FEF3C7;
+    --gs-amber-border: #FDE68A;
+    --gs-emerald: #10B981;
+    --gs-emerald-light: #DCFCE7;
+    --gs-emerald-border: #BBF7D0;
+    --gs-rose: #EF4444;
+    --gs-rose-light: #FEE2E2;
+    --gs-rose-border: #FECACA;
+    --gs-violet: #8B5CF6;
+    --gs-violet-light: #EDE9FE;
+    --gs-violet-border: #DDD6FE;
+    --gs-dark: #0F172A;
+    --gs-dark-card: #1E293B;
+    --gs-text: #1E293B;
+    --gs-muted: #64748B;
+    --gs-faint: #94A3B8;
+    --gs-border: #E2E8F0;
+    --gs-bg-soft: #F8FAFC;
+    --gs-card-radius: 16px;
+    --gs-shadow-card: 0 1px 3px rgba(15,23,42,0.03), 0 4px 12px rgba(15,23,42,0.03);
+    --gs-shadow-hover: 0 10px 25px -5px rgba(15,23,42,0.08), 0 8px 10px -6px rgba(15,23,42,0.04);
+}
+
+/* ── Top Header Toolbar ── */
+.gs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.25rem;
+}
+.gs-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.gs-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+.gs-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: var(--gs-dark);
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    margin: 0;
+}
+.gs-live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    background: var(--success-soft);
+    border: 1px solid var(--success-border);
+    color: var(--text-success);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+.gs-live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--success-color);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: gsPulse 2s infinite;
+}
+@keyframes gsPulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.gs-subtitle {
+    color: var(--gs-muted);
+    font-size: 0.88rem;
+    margin: 0;
+    line-height: 1.45;
+}
+
+/* ── Right-side action group (print) ── */
+.gs-header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+/* ── Executive Print / Export Button (Dark-Slate) ── */
+.gs-btn-print-executive {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 1.15rem 0.55rem 0.7rem;
+    border: none;
+    border-radius: 13px;
+    background: linear-gradient(135deg, var(--text-main) 0%, var(--text-main) 100%);
+    color: var(--text-inverse);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+    text-decoration: none;
+    white-space: nowrap;
+}
+.gs-btn-print-executive:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.28);
+    background: linear-gradient(135deg, var(--text-main) 0%, var(--text-muted) 100%);
+}
+.gs-btn-print-executive:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+}
+.gs-print-icon-wrap {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: rgba(56, 189, 248, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.gs-print-icon-wrap i {
+    font-size: 0.85rem;
+    color: var(--text-accent);
+}
+.gs-print-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+.gs-print-text-title {
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+}
+.gs-print-text-sub {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--text-subtle);
+    letter-spacing: 0.02em;
+}
+.gs-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.48rem 0.85rem;
+    border-radius: 11px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid var(--gs-border);
+    background: var(--bg-surface);
+    color: var(--gs-text);
+    transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    text-decoration: none;
+}
+.gs-action-btn:hover {
+    background: var(--gs-bg-soft);
+    border-color: var(--border-color);
+    transform: translateY(-1px);
+}
+.gs-action-btn:active {
+    transform: translateY(0);
+}
+.gs-action-btn i {
+    font-size: 0.82rem;
+    color: var(--gs-muted);
+}
+.gs-action-btn.refreshing i {
+    animation: gsSpin 0.8s linear infinite;
+}
+
+/* ── KPI Grid & Executive Cards ── */
+.gs-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 1.25rem;
+}
+@media (max-width: 1499px) {
+    .gs-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.85rem; }
+}
+@media (max-width: 768px) {
+    .gs-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem; }
+}
+@media (max-width: 480px) {
+    .gs-kpi-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.gs-kpi-card {
+    position: relative;
+    background: var(--bg-surface);
+    border: 1px solid var(--gs-border);
+    border-radius: var(--gs-card-radius);
+    padding: 1.05rem 1.15rem;
+    box-shadow: var(--gs-shadow-card);
+    transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.gs-kpi-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--kpi-accent, var(--gs-cyan));
+    opacity: 0.85;
+    transition: height 0.2s ease, opacity 0.2s ease;
+}
+.gs-kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--gs-shadow-hover);
+    border-color: var(--border-color);
+}
+.gs-kpi-card:hover::after {
+    height: 4px;
+    opacity: 1;
+}
+.gs-kpi-card.is-active-tab {
+    border-color: var(--kpi-accent, var(--gs-cyan));
+    background: linear-gradient(180deg, var(--bg-surface) 0%, var(--kpi-bg, var(--bg-page)) 100%);
+    box-shadow: 0 0 0 2px rgba(0, 153, 255, 0.15), var(--gs-shadow-card);
+}
+.gs-kpi-card.dark {
+    background: linear-gradient(135deg, var(--text-main) 0%, var(--text-main) 100%);
+    border-color: var(--border-strong);
+    color: var(--text-inverse);
+}
+.gs-kpi-card.dark::after {
+    background: linear-gradient(90deg, var(--accent-color), var(--brand-magenta-fg));
+    height: 3px;
+}
+.gs-kpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.55rem;
+}
+.gs-kpi-icon-pill {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    background: var(--kpi-bg, var(--gs-cyan-light));
+    color: var(--kpi-accent, var(--gs-cyan));
+    flex-shrink: 0;
+}
+.gs-kpi-card.dark .gs-kpi-icon-pill {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-accent);
+}
+.gs-kpi-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    background: var(--gs-bg-soft);
+    color: var(--gs-muted);
+}
+.gs-kpi-card.dark .gs-kpi-badge {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-subtle);
+}
+.gs-kpi-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gs-muted);
+    margin-bottom: 0.25rem;
+    display: block;
+}
+.gs-kpi-card.dark .gs-kpi-label {
+    color: var(--text-subtle);
+}
+.gs-kpi-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: clamp(1.25rem, 1.35vw, 1.55rem);
+    font-weight: 800;
+    color: var(--gs-dark);
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+}
+.gs-val-cents {
+    font-size: 0.75em;
+    opacity: 0.85;
+}
+.gs-kpi-card.dark .gs-kpi-value {
+    color: var(--text-inverse);
+}
+.gs-kpi-meta {
+    font-size: 0.72rem;
+    color: var(--gs-faint);
+    font-weight: 600;
+    margin-top: 0.35rem;
+    line-height: 1.35;
+    min-height: 2.2em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+.gs-kpi-card.dark .gs-kpi-meta {
+    color: var(--text-subtle);
+}
+
+/* ── Navigation Tabs ── */
+.gs-nav {
+    display: flex;
+    gap: 0.35rem;
+    overflow-x: auto;
+    padding: 0.35rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--gs-border);
+    border-radius: 14px;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+}
+.gs-nav-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--gs-muted);
+    padding: 0.55rem 0.95rem;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.16s ease;
+}
+.gs-nav-btn i {
+    font-size: 0.85rem;
+}
+.gs-nav-btn:hover {
+    background: var(--gs-bg-soft);
+    color: var(--gs-dark);
+}
+.gs-nav-btn.is-active {
+    background: var(--gs-cyan-light);
+    color: var(--gs-cyan-hover);
+    box-shadow: 0 1px 2px rgba(0, 153, 255, 0.08);
+}
+.gs-nav-btn.is-active::after {
+    content: '';
+    position: absolute;
+    bottom: -0.35rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 22px;
+    height: 3px;
+    border-radius: 99px;
+    background: var(--gs-cyan);
+}
+.gs-nav-badge {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    font-size: 0.63rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gs-bg-soft);
+    color: var(--gs-muted);
+}
+.gs-nav-badge.hot { background: var(--gs-magenta-light); color: var(--gs-magenta); }
+.gs-nav-badge.warn { background: var(--gs-amber-light); color: var(--text-warning); }
+.gs-nav-badge.red { background: var(--gs-rose-light); color: var(--gs-rose); }
+
+/* ── Module Container & Fade ── */
+.gs-module {
+    animation: gsModuleFade 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.gs-module[hidden] {
+    display: none !important;
+}
+@keyframes gsModuleFade {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Proportional Layout Cards ── */
+.gs-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--gs-border);
+    border-radius: var(--gs-card-radius);
+    padding: 1.25rem;
+    box-shadow: var(--gs-shadow-card);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.15s ease;
+}
+.gs-card:hover {
+    border-color: var(--border-color);
+}
+.gs-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+.gs-card-title {
+    font-size: 0.98rem;
+    font-weight: 800;
+    color: var(--gs-dark);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+.gs-card-title i {
+    font-size: 0.95rem;
+    color: var(--gs-cyan);
+}
+.gs-card-hint {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--gs-faint);
+}
+
+/* ── Proportional Grids ── */
+.gs-grid-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    gap: 1.15rem;
+    margin-bottom: 1.15rem;
+}
+.gs-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.15rem;
+    margin-bottom: 1.15rem;
+}
+.gs-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.15rem;
+    margin-bottom: 1.15rem;
+}
+@media (max-width: 1100px) {
+    .gs-grid-split, .gs-grid-2, .gs-grid-3 {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ── Chart Container with Proportions ── */
+.gs-chart-box {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    min-height: 240px;
+}
+.gs-chart-spinner {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--bg-surface) 85%, transparent);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+}
+.gs-chart-spinner.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+.gs-chart-spinner i {
+    font-size: 1.6rem;
+    color: var(--gs-cyan);
+    animation: gsSpin 0.8s linear infinite;
+}
+@keyframes gsSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Chart Donut with Center Stats ── */
+.gs-donut-layout {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: center;
+}
+@media (max-width: 640px) {
+    .gs-donut-layout { grid-template-columns: minmax(0, 1fr); }
+}
+.gs-donut-wrap {
+    position: relative;
+    width: 100%;
+    height: 195px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.gs-donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+.gs-donut-center-val {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--gs-dark);
+    line-height: 1.1;
+}
+.gs-donut-center-lbl {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--gs-muted);
+    letter-spacing: 0.04em;
+}
+
+/* ── Interactive Drilldown Drawer ── */
+.gs-drilldown-box {
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px dashed var(--gs-border);
+    display: none;
+    animation: gsModuleFade 0.2s ease;
+}
+.gs-drilldown-box.is-open {
+    display: block;
+}
+.gs-drilldown-tag {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gs-muted);
+    margin-bottom: 0.45rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* ── Needs Action Center Items ── */
+.gs-action-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--gs-border);
+    border-radius: 12px;
+    background: var(--bg-surface);
+    text-decoration: none;
+    transition: all 0.16s ease;
+    margin-bottom: 0.55rem;
+}
+.gs-action-item:last-child {
+    margin-bottom: 0;
+}
+.gs-action-item:hover {
+    border-color: var(--item-accent, var(--gs-cyan));
+    background: var(--item-bg, var(--gs-cyan-light));
+    transform: translateX(3px);
+}
+.gs-action-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    background: var(--item-bg, var(--gs-cyan-light));
+    color: var(--item-accent, var(--gs-cyan));
+    flex-shrink: 0;
+}
+.gs-action-info {
+    flex: 1;
+    min-width: 0;
+}
+.gs-action-text {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--gs-dark);
+    line-height: 1.3;
+}
+.gs-action-sub {
+    font-size: 0.71rem;
+    color: var(--gs-faint);
+    font-weight: 600;
+    margin-top: 0.1rem;
+}
+.gs-action-badge {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--item-accent, var(--gs-cyan));
+}
+
+/* ── Interactive Order Pipeline Stages ── */
+.gs-pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.gs-pipeline-item {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr) 42px;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: 9px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.15s ease;
+}
+.gs-pipeline-item:hover {
+    background: var(--gs-bg-soft);
+}
+.gs-pipeline-lbl {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--gs-text);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.gs-pipeline-num {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 800;
+    text-align: right;
+    color: var(--gs-dark);
+}
+.gs-bar-track {
+    background: var(--bg-subtle);
+    border-radius: 999px;
+    height: 8px;
+    overflow: hidden;
+    position: relative;
+}
+.gs-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Stat Mini Metric Cards ── */
+.gs-stat-card {
+    border: 1px solid var(--gs-border);
+    border-radius: 14px;
+    padding: 0.95rem 1.1rem;
+    background: var(--bg-surface);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+.gs-stat-lbl {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gs-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.gs-stat-val {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--gs-dark);
+    line-height: 1.15;
+}
+.gs-stat-sub {
+    font-size: 0.72rem;
+    color: var(--gs-faint);
+    font-weight: 600;
+}
+
+/* ── Modern Tables ── */
+.gs-table-wrap {
+    overflow-x: auto;
+    width: 100%;
+}
+.gs-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+.gs-table thead th {
+    background: var(--bg-page);
+    color: var(--gs-muted);
+    font-size: 0.67rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 800;
+    padding: 0.65rem 0.8rem;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--gs-border);
+}
+.gs-table tbody td {
+    padding: 0.65rem 0.8rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+.gs-table tbody tr {
+    transition: background 0.12s;
+}
+.gs-table tbody tr:hover {
+    background: var(--bg-page);
+}
+.gs-table tbody tr:last-child td {
+    border-bottom: none;
+}
+.gs-table-search {
+    position: relative;
+    max-width: 220px;
+}
+.gs-table-search input {
+    width: 100%;
+    padding: 0.35rem 0.65rem 0.35rem 1.85rem;
+    font-size: 0.76rem;
+    border: 1px solid var(--gs-border);
+    border-radius: 8px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s;
+}
+.gs-table-search input:focus {
+    border-color: var(--gs-cyan);
+}
+.gs-table-search i {
+    position: absolute;
+    left: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.72rem;
+    color: var(--gs-faint);
+}
+
+/* ── Badges & Pills ── */
+.gs-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+.gs-pill.cyan    { background: var(--gs-cyan-light); color: var(--gs-cyan-hover); }
+.gs-pill.magenta { background: var(--gs-magenta-light); color: var(--text-magenta); }
+.gs-pill.emerald { background: var(--gs-emerald-light); color: var(--text-success); }
+.gs-pill.amber   { background: var(--gs-amber-light); color: var(--text-warning); }
+.gs-pill.rose    { background: var(--gs-rose-light); color: var(--text-danger); }
+.gs-pill.violet  { background: var(--gs-violet-light); color: var(--text-violet); }
+.gs-pill.gray    { background: var(--gs-bg-soft); color: var(--text-muted); }
+
+.gs-rank-medal {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+.gs-rank-medal.gold { background: var(--warning-soft); color: var(--text-warning); }
+.gs-rank-medal.silver { background: var(--bg-subtle); color: var(--text-muted); }
+.gs-rank-medal.bronze { background: var(--warning-soft); color: var(--text-warning); }
+.gs-rank-medal.default { background: transparent; color: var(--gs-muted); }
+
+/* ── Alert Banner ── */
+.gs-alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1.15rem;
+    border-radius: 14px;
+    margin-bottom: 1.15rem;
+    background: var(--gs-rose-light);
+    border: 1px solid var(--gs-rose-border);
+}
+.gs-alert-banner.warn {
+    background: var(--gs-amber-light);
+    border-color: var(--gs-amber-border);
+}
+.gs-alert-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    background: color-mix(in srgb, var(--bg-surface) 75%, transparent);
+    color: var(--gs-rose);
+}
+.gs-alert-banner.warn .gs-alert-icon {
+    color: var(--gs-amber);
+}
+.gs-alert-content {
+    flex: 1;
+    min-width: 0;
+}
+.gs-alert-title {
+    font-weight: 800;
+    font-size: 0.88rem;
+    color: var(--gs-dark);
+}
+.gs-alert-desc {
+    font-size: 0.78rem;
+    color: var(--gs-muted);
+    margin-top: 0.1rem;
+}
+
+/* ── Empty States ── */
+.gs-empty-state {
+    text-align: center;
+    padding: 2.25rem 1rem;
+    color: var(--gs-muted);
+    font-size: 0.84rem;
+}
+.gs-empty-state i {
+    display: block;
+    font-size: 1.85rem;
+    margin-bottom: 0.65rem;
+    color: var(--gs-faint);
+}
+
+/* ── Micro Segmented Tabs Inside Cards ── */
+.gs-micro-tabs {
+    display: inline-flex;
+    background: var(--bg-subtle);
+    border-radius: 9px;
+    padding: 3px;
+    gap: 0.15rem;
+}
+.gs-micro-tabs button {
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.73rem;
+    font-weight: 700;
+    color: var(--gs-muted);
+    padding: 0.3rem 0.65rem;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.gs-micro-tabs button:hover:not(.is-active) {
+    color: var(--gs-dark);
+    background: color-mix(in srgb, var(--bg-surface) 60%, transparent);
+}
+.gs-micro-tabs button.is-active {
+    background: var(--bg-surface);
+    color: var(--gs-cyan-hover);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* ── Print Specific Styles ── */
+@media print {
+    .admin-topbar, .admin-sidebar, .gs-nav, .gs-table-search, .gs-action-btn, .gs-btn-print-executive {
+        display: none !important;
+    }
+    .gs-card {
+        border: 1px solid var(--border-strong);
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+}
+</style>
+</head>
+<body>
+
+    
+    <nav class="admin-topbar sticky top-0 z-50 w-full flex items-center justify-between">
+        <a href="http://127.0.0.1:8123/super-admin/dashboard" class="admin-topbar-brand">
+            <img src="http://127.0.0.1:8123/images/logo.png" alt="Grafika South">
+        </a>
+
+        <div class="ml-auto flex items-center gap-2">
+            <a href="http://127.0.0.1:8123/products" class="nav-link-item"><i class="fa-solid fa-layer-group"></i> Catalog</a>
+            <div class="nav-divider"></div>
+            <a href="http://127.0.0.1:8123/cart" class="nav-link-item">
+                <i class="fa-solid fa-cart-shopping"></i> Cart
+                <span style="background:var(--brand-magenta-fg); color:var(--text-inverse); font-size:0.72rem; font-weight:700; padding:1px 7px; border-radius:9999px; margin-left:3px;">
+                    0
+                </span>
+            </a>
+            <div class="nav-divider"></div>
+                            <a href="http://127.0.0.1:8123/super-admin/dashboard" class="nav-link-item active">
+                    <i class="fa-solid fa-shield-halved"></i> Super Admin
+                </a>
+                        <div class="nav-divider"></div>
+            <button type="button"
+            class="theme-toggle"
+            data-theme-toggle
+            aria-pressed="false"
+            aria-label="Switch to dark theme"
+            title="Switch to dark theme">
+        <span class="theme-toggle__icons" aria-hidden="true">
+            <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+            <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </span>
+    </button>
+        </div>
+    </nav>
+
+    
+    <div class="admin-portal-layout">
+
+        
+        <aside class="admin-sidebar sticky top-[60px] h-[calc(100vh-60px)] overflow-y-auto">
+
+            <nav class="admin-sidebar-nav">
+                                    <a href="http://127.0.0.1:8123/super-admin/dashboard" class="admin-nav-item active">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </a>
+                    <a href="http://127.0.0.1:8123/super-admin/hero" class="admin-nav-item ">
+                        <i class="fa-solid fa-images"></i> Banners
+                    </a>
+                    <a href="http://127.0.0.1:8123/super-admin/users" class="admin-nav-item ">
+                        <i class="fa-solid fa-users-gear"></i> Accounts
+                    </a>
+                    <a href="http://127.0.0.1:8123/super-admin/products" class="admin-nav-item ">
+                        <i class="fa-solid fa-boxes-stacked"></i> Products
+                    </a>
+                    <a href="http://127.0.0.1:8123/super-admin/orders" class="admin-nav-item ">
+                        <i class="fa-solid fa-list-check"></i> Orders
+                    </a>
+                    <div class="admin-nav-group " data-nav-group>
+                        <a href="http://127.0.0.1:8123/admin/materials" class="admin-nav-item admin-nav-parent ">
+                            <i class="fa-solid fa-warehouse"></i> Stocks
+                            <i class="fa-solid fa-chevron-down admin-nav-caret"></i>
+                        </a>
+                        <div class="admin-nav-submenu">
+                            <a href="http://127.0.0.1:8123/admin/materials" class="admin-nav-subitem "><i class="fa-solid fa-boxes-stacked"></i> Materials Stock</a>
+                            <a href="http://127.0.0.1:8123/admin/materials/stock-movements" class="admin-nav-subitem "><i class="fa-solid fa-clock-rotate-left"></i> Stock Movements</a>
+                        </div>
+                    </div>
+                    <a href="http://127.0.0.1:8123/admin/suppliers" class="admin-nav-item ">
+                        <i class="fa-solid fa-truck-field"></i> Suppliers
+                    </a>
+                    <a href="http://127.0.0.1:8123/admin/purchases" class="admin-nav-item ">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> Purchases
+                    </a>
+                    <a href="http://127.0.0.1:8123/super-admin/payment-methods" class="admin-nav-item ">
+                        <i class="fa-solid fa-credit-card"></i> Payments
+                    </a>
+                    <a href="http://127.0.0.1:8123/admin/tickets" class="admin-nav-item ">
+                        <i class="fa-solid fa-headset"></i> Support
+                    </a>
+                    <button type="button" class="admin-nav-item" onclick="openEditModal('modal-sa-security')" style="width:100%; border:none; background:none; cursor:pointer; text-align:left; font-family:inherit; font-size:0.85rem; font-weight:600; color:var(--text-muted);">
+                        <i class="fa-solid fa-shield-halved"></i> Security
+                    </button>
+                            </nav>
+
+            <div class="admin-sidebar-logout-wrap">
+                <form id="admin-logout-form" action="http://127.0.0.1:8123/logout" method="POST">
+                    <input type="hidden" name="_token" value="Aysnej9m5dMNwpcX1jQ5L7hMSKKhkzhFvo8WqpO8" autocomplete="off">                </form>
+                <button type="button" class="admin-nav-item logout-item" onclick="openAdminLogoutModal()" style="width:100%; border:none; background:none; cursor:pointer; text-align:left; font-family:inherit; font-size:0.85rem; font-weight:600;">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                </button>
+            </div>
+
+        </aside>
+
+        
+        <div id="adminLogoutModal" onclick="if(event.target===this) closeAdminLogoutModal()">
+            <div class="alm-card">
+                <div class="alm-head">
+                    <div class="alm-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
+                    <div>
+                        <div class="alm-title">Log out?</div>
+                        <div class="alm-sub">Are you sure you want to logout?</div>
+                    </div>
+                </div>
+                <div class="alm-actions">
+                    <button type="button" class="alm-cancel" onclick="closeAdminLogoutModal()">Cancel</button>
+                    <button type="submit" form="admin-logout-form" class="alm-confirm"><i class="fa-solid fa-arrow-right-from-bracket"></i> Yes, Log Out</button>
+                </div>
+            </div>
+        </div>
+        <style>
+            #adminLogoutModal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;align-items:center;justify-content:center;padding:1rem;}
+            #adminLogoutModal .alm-card{background:var(--bg-surface);border-radius:16px;max-width:400px;width:100%;padding:1.5rem;box-shadow:0 20px 50px rgba(0,0,0,.25);}
+            #adminLogoutModal .alm-head{display:flex;align-items:center;gap:.9rem;margin-bottom:1.25rem;}
+            #adminLogoutModal .alm-icon{width:44px;height:44px;border-radius:12px;background:var(--danger-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+            #adminLogoutModal .alm-icon i{color:var(--text-danger);font-size:1.1rem;}
+            #adminLogoutModal .alm-title{font-size:1.12rem;font-weight:800;color:var(--text-main);}
+            #adminLogoutModal .alm-sub{font-size:.88rem;color:var(--text-muted);margin-top:2px;}
+            #adminLogoutModal .alm-actions{display:flex;justify-content:flex-end;gap:.6rem;}
+            #adminLogoutModal .alm-cancel{padding:.6rem 1.2rem;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-surface);color:var(--text-main);font-weight:700;cursor:pointer;}
+            #adminLogoutModal .alm-cancel:hover{background:var(--bg-subtle);}
+            #adminLogoutModal .alm-confirm{padding:.6rem 1.2rem;border-radius:10px;border:none;background:var(--danger-color);color:var(--text-inverse);font-weight:700;cursor:pointer;}
+            #adminLogoutModal .alm-confirm:hover{background:var(--danger-color);}
+        </style>
+        <script>
+            function openAdminLogoutModal(){var m=document.getElementById('adminLogoutModal');if(m){m.style.display='flex';}}
+            function closeAdminLogoutModal(){var m=document.getElementById('adminLogoutModal');if(m){m.style.display='none';}}
+        </script>
+
+        
+        <main class="admin-main-content">
+
+            
+                            <div id="toast-container">
+                                                                                                </div>
+                <script>
+                    function dismissToast(el) {
+                        el.classList.add('hiding');
+                        el.addEventListener('animationend', () => el.remove(), { once: true });
+                    }
+                    // Auto-dismiss after 5 s
+                    document.addEventListener('DOMContentLoaded', function () {
+                        document.querySelectorAll('.toast').forEach(function (t) {
+                            setTimeout(function () { if (t.isConnected) dismissToast(t); }, 5000);
+                        });
+                    });
+                </script>
+            
+            <div class="gs-analytics" id="analyticsRoot">
+
+    
+    <header class="gs-header">
+        <div class="gs-title-wrap">
+            <div class="gs-title-row">
+                <h1 class="gs-title">Business Analytics &amp; Sales</h1>
+                <span class="gs-live-badge">
+                    <span class="gs-live-dot"></span> Live Store Intelligence
+                </span>
+            </div>
+            <p class="gs-subtitle">
+                Real-time revenue metrics, order velocity, payment settlement health, and supply intelligence.
+            </p>
+        </div>
+
+        <div class="gs-header-right">
+            
+            <button type="button" class="gs-btn-print-executive" onclick="window.print();" title="Print or save executive PDF report">
+                <span class="gs-print-icon-wrap">
+                    <i class="fa-solid fa-print"></i>
+                </span>
+                <span class="gs-print-text">
+                    <span class="gs-print-text-title">Print Report</span>
+                    <span class="gs-print-text-sub">Export PDF / Paper</span>
+                </span>
+            </button>
+        </div>
+    </header>
+
+    
+    <section class="gs-kpi-grid" id="kpiStrip" aria-label="Key Performance Indicators">
+
+        
+        <button type="button" class="gs-kpi-card dark is-active-tab" data-target-module="revenue" style="--kpi-accent:#0099FF; --kpi-bg:#E6F4FF;" title="Click to view Revenue & Sales details">
+            <div>
+                <div class="gs-kpi-top">
+                    <span class="gs-kpi-icon-pill"><i class="fa-solid fa-peso-sign"></i></span>
+                    <span class="gs-kpi-badge"><i class="fa-solid fa-arrow-trend-up"></i> Sales</span>
+                </div>
+                <span class="gs-kpi-label">Total Revenue</span>
+                <div class="gs-kpi-value" id="val-revenue">₱530<span class="gs-val-cents">.00</span></div>
+            </div>
+            <div class="gs-kpi-meta" id="val-revenue-sub">
+                <span id="val-orders-count">3</span> orders · avg ₱<span id="val-avg-order">177</span>
+            </div>
+        </button>
+
+        
+        <button type="button" class="gs-kpi-card" data-target-module="collections" style="--kpi-accent:#EC008C; --kpi-bg:#FDE8F5;" title="Click to review pending payment proofs">
+            <div>
+                <div class="gs-kpi-top">
+                    <span class="gs-kpi-icon-pill"><i class="fa-solid fa-hourglass-half"></i></span>
+                    <span class="gs-kpi-badge" style="color:var(--gs-magenta);"><i class="fa-solid fa-clock"></i> Pending</span>
+                </div>
+                <span class="gs-kpi-label">Awaiting Verification</span>
+                <div class="gs-kpi-value" style="color:var(--gs-magenta);" id="val-pending">₱45<span class="gs-val-cents">.00</span></div>
+            </div>
+            <div class="gs-kpi-meta" id="val-pending-sub">
+                <span id="val-proofs-count">1</span> payment proof
+            </div>
+        </button>
+
+        
+        <button type="button" class="gs-kpi-card" data-target-module="collections" style="--kpi-accent:#10B981; --kpi-bg:#DCFCE7;" title="Click to view Collections details">
+            <div>
+                <div class="gs-kpi-top">
+                    <span class="gs-kpi-icon-pill"><i class="fa-solid fa-circle-check"></i></span>
+                    <span class="gs-kpi-badge" style="color:var(--text-success);"><i class="fa-solid fa-shield-check"></i> Settled</span>
+                </div>
+                <span class="gs-kpi-label">Collected (Verified)</span>
+                <div class="gs-kpi-value" style="color:var(--text-success);" id="val-collected">₱0<span class="gs-val-cents">.00</span></div>
+            </div>
+            <div class="gs-kpi-meta" id="val-collected-sub">
+                ₱<span id="val-collected-month">0.00</span> this month
+            </div>
+        </button>
+
+        
+        <button type="button" class="gs-kpi-card" data-target-module="collections" style="--kpi-accent:#F59E0B; --kpi-bg:#FEF3C7;" title="Click to view outstanding downpayments & pending proofs">
+            <div>
+                <div class="gs-kpi-top">
+                    <span class="gs-kpi-icon-pill"><i class="fa-solid fa-file-invoice-dollar"></i></span>
+                    <span class="gs-kpi-badge" style="color:var(--text-warning);"><i class="fa-solid fa-wallet"></i> Receivable</span>
+                </div>
+                <span class="gs-kpi-label">Uncollected Total</span>
+                <div class="gs-kpi-value" style="color:var(--text-warning);" id="val-uncollected">₱90<span class="gs-val-cents">.00</span></div>
+            </div>
+            <div class="gs-kpi-meta">
+                Bal: ₱45 · Proofs: ₱45
+            </div>
+        </button>
+
+        
+        <button type="button" class="gs-kpi-card" data-target-module="operations" style="--kpi-accent:#8B5CF6; --kpi-bg:#EDE9FE;" title="Click to view Operations & Pipeline">
+            <div>
+                <div class="gs-kpi-top">
+                    <span class="gs-kpi-icon-pill"><i class="fa-solid fa-box-open"></i></span>
+                    <span class="gs-kpi-badge" style="color:var(--text-violet);"><i class="fa-solid fa-dolly"></i> Velocity</span>
+                </div>
+                <span class="gs-kpi-label">Total Store Orders</span>
+                <div class="gs-kpi-value" style="color:var(--text-violet);" id="val-orders">3</div>
+            </div>
+            <div class="gs-kpi-meta" id="val-orders-sub">
+                <span id="val-inprogress-count">1</span> in progress · <span id="val-pending-orders-count">0</span> pending
+            </div>
+        </button>
+
+        
+        <button type="button" class="gs-kpi-card" data-target-module="overview" style="--kpi-accent:#EF4444; --kpi-bg:#FEE2E2;" title="Click to jump to Action Center">
+            <div>
+                <div class="gs-kpi-top">
+                    <span class="gs-kpi-icon-pill"><i class="fa-solid fa-bolt"></i></span>
+                    <span class="gs-kpi-badge" style="color:var(--text-danger);"><i class="fa-solid fa-triangle-exclamation"></i> Tasks</span>
+                </div>
+                <span class="gs-kpi-label">Needs Action</span>
+                <div class="gs-kpi-value" style="color:var(--text-danger);" id="val-action">3</div>
+            </div>
+            <div class="gs-kpi-meta">
+                3 queues waiting on staff
+            </div>
+        </button>
+    </section>
+
+    
+    <nav class="gs-nav" id="moduleNav" aria-label="Analytics Sections">
+        <button type="button" class="gs-nav-btn is-active" data-module="overview">
+            <i class="fa-solid fa-gauge-high"></i> Overview
+        </button>
+        <button type="button" class="gs-nav-btn" data-module="revenue">
+            <i class="fa-solid fa-chart-line"></i> Revenue &amp; Sales
+        </button>
+        <button type="button" class="gs-nav-btn" data-module="collections">
+            <i class="fa-solid fa-hand-holding-dollar"></i> Collections
+                            <span class="gs-nav-badge hot">1</span>
+                    </button>
+        <button type="button" class="gs-nav-btn" data-module="operations">
+            <i class="fa-solid fa-diagram-project"></i> Operations
+                    </button>
+        <button type="button" class="gs-nav-btn" data-module="inventory">
+            <i class="fa-solid fa-warehouse"></i> Inventory
+                            <span class="gs-nav-badge red">2</span>
+                    </button>
+        <button type="button" class="gs-nav-btn" data-module="suppliers">
+            <i class="fa-solid fa-truck-field"></i> Suppliers
+                    </button>
+    </nav>
+
+    
+    <section class="gs-module" data-module-panel="overview">
+
+        
+        <div class="gs-grid-split">
+
+            
+            <div class="gs-card">
+                <div class="gs-card-header">
+                    <div>
+                        <h2 class="gs-card-title">
+                            <i class="fa-solid fa-chart-line"></i> Revenue &amp; Sales Velocity
+                        </h2>
+                        <span class="gs-card-hint">Click any timeline point for detailed breakdown</span>
+                    </div>
+
+                    
+                    <div class="gs-micro-tabs" id="trendPeriodTabs">
+                        <button type="button" data-period="daily">Daily</button>
+                        <button type="button" data-period="weekly">Weekly</button>
+                        <button type="button" data-period="monthly" class="is-active">Monthly</button>
+                        <button type="button" data-period="yearly">Yearly</button>
+                    </div>
+                </div>
+
+                
+                <div class="gs-chart-box" style="height:270px;">
+                    <canvas id="trendChart"></canvas>
+                    <div class="gs-chart-spinner" id="trendSpinner">
+                        <i class="fa-solid fa-circle-notch"></i>
+                    </div>
+                </div>
+
+                
+                <div class="gs-drilldown-box" id="trendDrillBox">
+                    <div class="gs-drilldown-tag">
+                        <span>Period Breakdown</span>
+                        <button type="button" class="gs-action-btn" style="padding:0.2rem 0.5rem; font-size:0.7rem;" onclick="document.getElementById('trendDrillBox').classList.remove('is-open');">
+                            Close
+                        </button>
+                    </div>
+                    <div id="trendDrillContent"></div>
+                </div>
+            </div>
+
+            
+            <div class="gs-card">
+                <div class="gs-card-header">
+                    <div>
+                        <h2 class="gs-card-title">
+                            <i class="fa-solid fa-bolt" style="color:var(--gs-magenta);"></i> Needs Action
+                        </h2>
+                        <span class="gs-card-hint">3 active queues</span>
+                    </div>
+                    <a href="http://127.0.0.1:8123/super-admin/orders" class="gs-action-btn" style="padding:0.35rem 0.65rem; font-size:0.73rem;">
+                        View Orders <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+                                                                    <a href="http://127.0.0.1:8123/super-admin/orders" class="gs-action-item" style="--item-accent:#EC008C; --item-bg:#FDE8F5;">
+                            <span class="gs-action-icon"><i class="fa-solid fa-receipt"></i></span>
+                            <div class="gs-action-info">
+                                <div class="gs-action-text">Payment proofs awaiting verification</div>
+                                <div class="gs-action-sub">₱45.00</div>
+                            </div>
+                            <span class="gs-action-badge">1</span>
+                        </a>
+                                                                    <a href="http://127.0.0.1:8123/admin/materials?stock_status=low_stock" class="gs-action-item" style="--item-accent:#DC2626; --item-bg:#FEE2E2;">
+                            <span class="gs-action-icon"><i class="fa-solid fa-boxes-packing"></i></span>
+                            <div class="gs-action-info">
+                                <div class="gs-action-text">Materials low on stock</div>
+                                <div class="gs-action-sub">restock needed</div>
+                            </div>
+                            <span class="gs-action-badge">2</span>
+                        </a>
+                                                                    <a href="http://127.0.0.1:8123/admin/tickets" class="gs-action-item" style="--item-accent:#7C3AED; --item-bg:#EDE9FE;">
+                            <span class="gs-action-icon"><i class="fa-solid fa-headset"></i></span>
+                            <div class="gs-action-info">
+                                <div class="gs-action-text">Open support tickets</div>
+                                <div class="gs-action-sub">none urgent</div>
+                            </div>
+                            <span class="gs-action-badge">2</span>
+                        </a>
+                                    </div>
+            </div>
+        </div>
+
+        
+        <div class="gs-grid-2">
+
+            
+            <div class="gs-card">
+                <div class="gs-card-header">
+                    <div>
+                        <h2 class="gs-card-title">
+                            <i class="fa-solid fa-wallet"></i> Cash Position &amp; Liquidity
+                        </h2>
+                        <span class="gs-card-hint">Settlement distribution of all tracked funds</span>
+                    </div>
+                    <button type="button" class="gs-action-btn" style="padding:0.3rem 0.6rem; font-size:0.72rem;" onclick="activateModule('collections');">
+                        View Collections →
+                    </button>
+                </div>
+
+                <div class="gs-donut-layout">
+                    
+                    <div class="gs-donut-wrap">
+                        <canvas id="cashDonutOverview"></canvas>
+                        <div class="gs-donut-center">
+                            <div class="gs-donut-center-val" id="cashDonutCenterVal">₱0.1k</div>
+                            <div class="gs-donut-center-lbl">Total Funds</div>
+                        </div>
+                    </div>
+
+                    
+                    <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                        <div>
+                            <div style="display:flex; justify-content:space-between; font-size:0.78rem; font-weight:700; margin-bottom:0.25rem;">
+                                <span style="display:flex; align-items:center; gap:0.35rem;">
+                                    <span style="width:8px; height:8px; border-radius:50%; background:var(--gs-cyan);"></span>
+                                    Verified Collected
+                                </span>
+                                <span>₱0.00</span>
+                            </div>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="background:var(--gs-cyan); width:3%;"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div style="display:flex; justify-content:space-between; font-size:0.78rem; font-weight:700; margin-bottom:0.25rem;">
+                                <span style="display:flex; align-items:center; gap:0.35rem;">
+                                    <span style="width:8px; height:8px; border-radius:50%; background:var(--warning-color);"></span>
+                                    Downpayment Balances
+                                </span>
+                                <span>₱45.00</span>
+                            </div>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="background:var(--warning-color); width:50%;"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div style="display:flex; justify-content:space-between; font-size:0.78rem; font-weight:700; margin-bottom:0.25rem;">
+                                <span style="display:flex; align-items:center; gap:0.35rem;">
+                                    <span style="width:8px; height:8px; border-radius:50%; background:var(--danger-color);"></span>
+                                    Awaiting Verification
+                                </span>
+                                <span>₱45.00</span>
+                            </div>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="background:var(--danger-color); width:50%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="gs-card">
+                <div class="gs-card-header">
+                    <div>
+                        <h2 class="gs-card-title">
+                            <i class="fa-solid fa-diagram-project"></i> Order Pipeline &amp; Fulfillment
+                        </h2>
+                        <span class="gs-card-hint">Click any stage to inspect filtered orders</span>
+                    </div>
+                    <span class="gs-pill gray">3 Total</span>
+                </div>
+
+                <div class="gs-pipeline">
+                    
+                                                                    <a href="http://127.0.0.1:8123/super-admin/orders?status=pending" class="gs-pipeline-item" title="Click to view all Pending orders">
+                            <span class="gs-pipeline-lbl">
+                                <i class="fa-solid fa-clock" style="color:#EAB308; font-size:0.75rem;"></i>
+                                Pending
+                            </span>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="width:0%; background:#EAB308;"></div>
+                            </div>
+                            <span class="gs-pipeline-num">0</span>
+                        </a>
+                                                                    <a href="http://127.0.0.1:8123/super-admin/orders?status=design_review" class="gs-pipeline-item" title="Click to view all Design Review orders">
+                            <span class="gs-pipeline-lbl">
+                                <i class="fa-solid fa-pen-ruler" style="color:#8B5CF6; font-size:0.75rem;"></i>
+                                Design Review
+                            </span>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="width:0%; background:#8B5CF6;"></div>
+                            </div>
+                            <span class="gs-pipeline-num">0</span>
+                        </a>
+                                                                    <a href="http://127.0.0.1:8123/super-admin/orders?status=approved" class="gs-pipeline-item" title="Click to view all Approved orders">
+                            <span class="gs-pipeline-lbl">
+                                <i class="fa-solid fa-check" style="color:#0099FF; font-size:0.75rem;"></i>
+                                Approved
+                            </span>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="width:0%; background:#0099FF;"></div>
+                            </div>
+                            <span class="gs-pipeline-num">0</span>
+                        </a>
+                                                                    <a href="http://127.0.0.1:8123/super-admin/orders?status=printing" class="gs-pipeline-item" title="Click to view all Printing orders">
+                            <span class="gs-pipeline-lbl">
+                                <i class="fa-solid fa-print" style="color:#EC008C; font-size:0.75rem;"></i>
+                                Printing
+                            </span>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="width:50%; background:#EC008C;"></div>
+                            </div>
+                            <span class="gs-pipeline-num">1</span>
+                        </a>
+                                                                    <a href="http://127.0.0.1:8123/super-admin/orders?status=ready" class="gs-pipeline-item" title="Click to view all Ready for Pickup orders">
+                            <span class="gs-pipeline-lbl">
+                                <i class="fa-solid fa-box-circle-check" style="color:#06B6D4; font-size:0.75rem;"></i>
+                                Ready for Pickup
+                            </span>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="width:0%; background:#06B6D4;"></div>
+                            </div>
+                            <span class="gs-pipeline-num">0</span>
+                        </a>
+                                                                    <a href="http://127.0.0.1:8123/super-admin/orders?status=shipped" class="gs-pipeline-item" title="Click to view all Shipped / In Transit orders">
+                            <span class="gs-pipeline-lbl">
+                                <i class="fa-solid fa-truck-fast" style="color:#6366F1; font-size:0.75rem;"></i>
+                                Shipped / In Transit
+                            </span>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="width:0%; background:#6366F1;"></div>
+                            </div>
+                            <span class="gs-pipeline-num">0</span>
+                        </a>
+                                                                    <a href="http://127.0.0.1:8123/super-admin/orders?status=completed" class="gs-pipeline-item" title="Click to view all Completed orders">
+                            <span class="gs-pipeline-lbl">
+                                <i class="fa-solid fa-circle-check" style="color:#10B981; font-size:0.75rem;"></i>
+                                Completed
+                            </span>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="width:100%; background:#10B981;"></div>
+                            </div>
+                            <span class="gs-pipeline-num">2</span>
+                        </a>
+                                                                    <a href="http://127.0.0.1:8123/super-admin/orders?status=cancelled" class="gs-pipeline-item" title="Click to view all Cancelled orders">
+                            <span class="gs-pipeline-lbl">
+                                <i class="fa-solid fa-ban" style="color:#DC2626; font-size:0.75rem;"></i>
+                                Cancelled
+                            </span>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="width:0%; background:#DC2626;"></div>
+                            </div>
+                            <span class="gs-pipeline-num">0</span>
+                        </a>
+                                    </div>
+            </div>
+
+        </div>
+
+    </section>
+
+    
+    <section class="gs-module" data-module-panel="revenue" hidden>
+
+        
+        <div class="gs-grid-2">
+
+            
+            <div class="gs-card">
+                <div class="gs-card-header">
+                    <div>
+                        <h2 class="gs-card-title">
+                            <i class="fa-solid fa-circle-half-stroke"></i> Custom vs Regular Catalog
+                        </h2>
+                        <span class="gs-card-hint">Order composition and revenue distribution</span>
+                    </div>
+                </div>
+
+                <div class="gs-donut-layout">
+                    <div class="gs-donut-wrap">
+                        <canvas id="typeDonutChart"></canvas>
+                        <div class="gs-donut-center">
+                                                        <div class="gs-donut-center-val">67%</div>
+                            <div class="gs-donut-center-lbl">Custom Share</div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:0.85rem;">
+                        <div class="gs-stat-card" style="padding:0.75rem 0.9rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span class="gs-stat-lbl"><i class="fa-solid fa-palette" style="color:var(--gs-cyan);"></i> Custom Orders</span>
+                                <span class="gs-pill cyan">2 orders</span>
+                            </div>
+                            <div class="gs-stat-val" style="font-size:1.25rem; color:var(--gs-cyan);">₱180.00</div>
+                            <div class="gs-stat-sub">avg ₱90 per order</div>
+                        </div>
+
+                        <div class="gs-stat-card" style="padding:0.75rem 0.9rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span class="gs-stat-lbl"><i class="fa-solid fa-box" style="color:var(--gs-emerald);"></i> Regular / Ready-Made</span>
+                                <span class="gs-pill emerald">1 orders</span>
+                            </div>
+                            <div class="gs-stat-val" style="font-size:1.25rem; color:var(--gs-emerald);">₱350.00</div>
+                            <div class="gs-stat-sub">avg ₱350 per order</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="gs-card">
+                <div class="gs-card-header">
+                    <div>
+                        <h2 class="gs-card-title">
+                            <i class="fa-solid fa-layer-group"></i> Revenue by Product Category
+                        </h2>
+                        <span class="gs-card-hint">Sales contribution across catalog categories</span>
+                    </div>
+                </div>
+
+                <div class="gs-chart-box" style="height:210px;">
+                    <canvas id="categoryBarChart"></canvas>
+                </div>
+
+                
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.75rem; padding-top:0.6rem; border-top:1px dashed var(--gs-border);">
+                                            <span class="gs-pill gray" style="font-size:0.73rem;">
+                            <strong>Identification</strong>: ₱530 (3 units)
+                        </span>
+                                    </div>
+            </div>
+
+        </div>
+
+        
+        <div class="gs-grid-2">
+
+            
+            <div class="gs-card">
+                <div class="gs-card-header">
+                    <div>
+                        <h2 class="gs-card-title">
+                            <i class="fa-solid fa-trophy" style="color:var(--text-warning);"></i> Top-Selling Products
+                        </h2>
+                        <span class="gs-card-hint">Best performers ranked by financial volume &amp; units</span>
+                    </div>
+
+                    <div class="gs-micro-tabs" id="sellerModeTabs">
+                        <button type="button" data-mode="revenue" class="is-active">By Revenue</button>
+                        <button type="button" data-mode="units">By Units</button>
+                    </div>
+                </div>
+
+                <div class="gs-chart-box" style="height:260px;">
+                    <canvas id="topSellersChart"></canvas>
+                </div>
+            </div>
+
+            
+            <div class="gs-card">
+                <div class="gs-card-header">
+                    <div>
+                        <h2 class="gs-card-title">
+                            <i class="fa-solid fa-list-ol"></i> Product Ranking
+                        </h2>
+                        <span class="gs-card-hint">Performance directory</span>
+                    </div>
+
+                    <div class="gs-table-search">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="rankingSearch" placeholder="Search product..." autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="gs-table-wrap">
+                    <table class="gs-table" id="rankTableRevenue">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">#</th>
+                                <th>Product</th>
+                                <th style="text-align:right;">Sold</th>
+                                <th style="text-align:right;">Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                                                            <tr class="rank-row" data-name="pbc id">
+                                    <td>
+                                        <span class="gs-rank-medal gold">
+                                            1
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="http://127.0.0.1:8123/super-admin/products/22/edit" class="db-link" style="font-weight:700; color:var(--gs-text);">
+                                            PBC ID
+                                        </a>
+                                    </td>
+                                    <td style="text-align:right; font-weight:700;">1</td>
+                                    <td style="text-align:right; font-weight:800; color:var(--gs-dark);">₱350.00</td>
+                                </tr>
+                                                            <tr class="rank-row" data-name="not custom item">
+                                    <td>
+                                        <span class="gs-rank-medal silver">
+                                            2
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="http://127.0.0.1:8123/super-admin/products/21/edit" class="db-link" style="font-weight:700; color:var(--gs-text);">
+                                            not custom item
+                                        </a>
+                                    </td>
+                                    <td style="text-align:right; font-weight:700;">2</td>
+                                    <td style="text-align:right; font-weight:800; color:var(--gs-dark);">₱180.00</td>
+                                </tr>
+                                                    </tbody>
+                    </table>
+
+                    <table class="gs-table" id="rankTableUnits" style="display:none;">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">#</th>
+                                <th>Product</th>
+                                <th style="text-align:right;">Sold</th>
+                                <th style="text-align:right;">Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                                                            <tr class="rank-row" data-name="not custom item">
+                                    <td>
+                                        <span class="gs-rank-medal gold">
+                                            1
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="http://127.0.0.1:8123/super-admin/products/21/edit" class="db-link" style="font-weight:700; color:var(--gs-text);">
+                                            not custom item
+                                        </a>
+                                    </td>
+                                    <td style="text-align:right; font-weight:800; color:var(--gs-dark);">2 units</td>
+                                    <td style="text-align:right; font-weight:700;">₱180.00</td>
+                                </tr>
+                                                            <tr class="rank-row" data-name="pbc id">
+                                    <td>
+                                        <span class="gs-rank-medal silver">
+                                            2
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="http://127.0.0.1:8123/super-admin/products/22/edit" class="db-link" style="font-weight:700; color:var(--gs-text);">
+                                            PBC ID
+                                        </a>
+                                    </td>
+                                    <td style="text-align:right; font-weight:800; color:var(--gs-dark);">1 units</td>
+                                    <td style="text-align:right; font-weight:700;">₱350.00</td>
+                                </tr>
+                                                    </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+    
+    <section class="gs-module" data-module-panel="collections" hidden>
+
+        
+                    <div class="gs-alert-banner">
+                <span class="gs-alert-icon"><i class="fa-solid fa-receipt"></i></span>
+                <div class="gs-alert-content">
+                    <div class="gs-alert-title">1 payment proof is awaiting verification</div>
+                    <div class="gs-alert-desc">₱45.00 in submitted payments require staff sign-off to finalize order production.</div>
+                </div>
+                <a href="http://127.0.0.1:8123/super-admin/orders" class="gs-action-btn" style="background:var(--danger-color); color:var(--text-inverse); border-color:var(--danger-color); font-weight:800;">
+                    Review Proofs Now <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+        
+        
+        <div class="gs-grid-3">
+            <div class="gs-stat-card">
+                <span class="gs-stat-lbl"><i class="fa-solid fa-circle-check" style="color:var(--gs-emerald);"></i> Collected (Verified)</span>
+                <span class="gs-stat-val" style="color:var(--gs-emerald);">₱0.00</span>
+                <span class="gs-stat-sub">₱0.00 verified this month</span>
+            </div>
+
+            <div class="gs-stat-card">
+                <span class="gs-stat-lbl"><i class="fa-solid fa-hourglass-half" style="color:var(--text-warning);"></i> Downpayment Balances</span>
+                <span class="gs-stat-val" style="color:var(--text-warning);">₱45.00</span>
+                <span class="gs-stat-sub">Pending completion across active orders</span>
+            </div>
+
+            <div class="gs-stat-card">
+                <span class="gs-stat-lbl"><i class="fa-solid fa-triangle-exclamation" style="color:var(--gs-rose);"></i> Awaiting Verification</span>
+                <span class="gs-stat-val" style="color:var(--gs-rose);">₱45.00</span>
+                <span class="gs-stat-sub">1 unverified customer payment proof</span>
+            </div>
+        </div>
+
+        
+        <div class="gs-grid-2">
+
+            
+            <div class="gs-card">
+                <div class="gs-card-header">
+                    <div>
+                        <h2 class="gs-card-title">
+                            <i class="fa-solid fa-wallet"></i> Collections Health
+                        </h2>
+                        <span class="gs-card-hint">Settlement ratio</span>
+                    </div>
+                </div>
+
+                <div class="gs-donut-layout">
+                    <div class="gs-donut-wrap">
+                        <canvas id="collectionChartModule"></canvas>
+                        <div class="gs-donut-center">
+                                                        <div class="gs-donut-center-val">0%</div>
+                            <div class="gs-donut-center-lbl">Collected</div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:0.65rem;">
+                        <div class="gs-stat-card" style="padding:0.75rem;">
+                            <span class="gs-stat-lbl" style="color:var(--gs-cyan);">Total Tracked</span>
+                            <span class="gs-stat-val" style="font-size:1.2rem;">₱90.00</span>
+                        </div>
+                        <div class="gs-stat-card" style="padding:0.75rem;">
+                            <span class="gs-stat-lbl" style="color:var(--gs-rose);">Uncollected Sum</span>
+                            <span class="gs-stat-val" style="font-size:1.2rem; color:var(--gs-rose);">₱90.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="gs-card">
+                <div class="gs-card-header">
+                    <div>
+                        <h2 class="gs-card-title">
+                            <i class="fa-solid fa-receipt" style="color:var(--gs-magenta);"></i> Verification Queue
+                        </h2>
+                        <span class="gs-card-hint">1 proofs waiting</span>
+                    </div>
+                </div>
+
+                <div class="gs-table-wrap">
+                    <table class="gs-table">
+                        <thead>
+                            <tr>
+                                <th>Order</th>
+                                <th>Method</th>
+                                <th>Plan</th>
+                                <th style="text-align:right;">Amount</th>
+                                <th>Submitted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                                                            <tr>
+                                    <td>
+                                                                                    <a href="http://127.0.0.1:8123/admin/orders/68" class="gs-action-btn" style="padding:0.25rem 0.5rem; font-size:0.72rem; color:var(--gs-cyan);">
+                                                #GS-20261103-ZFU1T
+                                            </a>
+                                                                            </td>
+                                    <td>Gcash</td>
+                                    <td><span class="gs-pill gray">Downpayment</span></td>
+                                    <td style="text-align:right; font-weight:800; color:var(--gs-dark);">₱45.00</td>
+                                    <td style="font-size:0.73rem; color:var(--gs-faint);">Nov 03, 03:33 PM</td>
+                                </tr>
+                                                    </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        
+        <div class="gs-card">
+            <div class="gs-card-header">
+                <div>
+                    <h2 class="gs-card-title">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> Outstanding Downpayment Balances
+                    </h2>
+                    <span class="gs-card-hint">Orders with unpaid downpayment balances</span>
+                </div>
+            </div>
+
+            <div class="gs-table-wrap">
+                <table class="gs-table">
+                    <thead>
+                        <tr>
+                            <th>Order</th>
+                            <th>Customer</th>
+                            <th>Age</th>
+                            <th style="text-align:right;">Remaining</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                                                    <tr>
+                                <td>
+                                    <a href="http://127.0.0.1:8123/admin/orders/68" class="gs-action-btn" style="padding:0.25rem 0.5rem; font-size:0.72rem; color:var(--gs-cyan);">
+                                        #GS-20261103-ZFU1T
+                                    </a>
+                                </td>
+                                <td style="font-weight:700;">protodex2.0 sabsab makis ako</td>
+                                <td>
+                                    <span class="gs-pill gray">
+                                        1d old
+                                    </span>
+                                </td>
+                                <td style="text-align:right; font-weight:800; color:var(--gs-dark);">₱45.00</td>
+                                <td><span class="gs-pill gray">printing</span></td>
+                            </tr>
+                                            </tbody>
+                </table>
+            </div>
+        </div>
+
+    </section>
+
+    
+    <section class="gs-module" data-module-panel="operations" hidden>
+
+        
+        <div class="gs-grid-2">
+            <div class="gs-stat-card">
+                <span class="gs-stat-lbl"><i class="fa-solid fa-clipboard-list" style="color:var(--text-warning);"></i> Awaiting Processing</span>
+                <span class="gs-stat-val" style="color:var(--text-warning);">0</span>
+                <span class="gs-stat-sub">Oldest pending order: 0 days</span>
+            </div>
+
+            <div class="gs-stat-card">
+                <span class="gs-stat-lbl"><i class="fa-solid fa-pen-ruler" style="color:var(--gs-violet);"></i> Design Review Queue</span>
+                <span class="gs-stat-val" style="color:var(--gs-violet);">0</span>
+                <span class="gs-stat-sub">Artwork designs pending staff review</span>
+            </div>
+        </div>
+
+        
+        <div class="gs-grid-2">
+
+            
+            <div class="gs-card">
+                <div class="gs-card-header">
+                    <div>
+                        <h2 class="gs-card-title">
+                            <i class="fa-solid fa-pen-ruler"></i> Design Review Queue
+                        </h2>
+                        <span class="gs-card-hint">Custom artwork files waiting for review</span>
+                    </div>
+                </div>
+
+                <div class="gs-table-wrap">
+                    <table class="gs-table">
+                        <thead>
+                            <tr>
+                                <th>Order</th>
+                                <th>Customer</th>
+                                <th>Age</th>
+                                <th>Amount</th>
+                                <th style="text-align:right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                                                            <tr>
+                                    <td colspan="5" class="gs-empty-state">
+                                        <i class="fa-solid fa-circle-check" style="color:var(--gs-emerald);"></i>
+                                        No designs waiting for review.
+                                    </td>
+                                </tr>
+                                                    </tbody>
+                    </table>
+                </div>
+            </div>
+
+            
+            <div class="gs-card">
+                <div class="gs-card-header">
+                    <div>
+                        <h2 class="gs-card-title">
+                            <i class="fa-solid fa-hourglass-half"></i> Pending Order Aging
+                        </h2>
+                        <span class="gs-card-hint">Days elapsed since order creation</span>
+                    </div>
+                </div>
+
+                <div class="gs-pipeline">
+                                                                <div class="gs-pipeline-item">
+                            <span class="gs-pipeline-lbl">0–2 days</span>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="width:0%; background:#10B981;"></div>
+                            </div>
+                            <span class="gs-pipeline-num">0</span>
+                        </div>
+                                            <div class="gs-pipeline-item">
+                            <span class="gs-pipeline-lbl">3–7 days</span>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="width:0%; background:#0099FF;"></div>
+                            </div>
+                            <span class="gs-pipeline-num">0</span>
+                        </div>
+                                            <div class="gs-pipeline-item">
+                            <span class="gs-pipeline-lbl">8–14 days</span>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="width:0%; background:#F59E0B;"></div>
+                            </div>
+                            <span class="gs-pipeline-num">0</span>
+                        </div>
+                                            <div class="gs-pipeline-item">
+                            <span class="gs-pipeline-lbl">15+ days</span>
+                            <div class="gs-bar-track">
+                                <div class="gs-bar-fill" style="width:0%; background:#EF4444;"></div>
+                            </div>
+                            <span class="gs-pipeline-num">0</span>
+                        </div>
+                                    </div>
+
+                <div style="margin-top:1.15rem; padding-top:1rem; border-top:1px dashed var(--gs-border);">
+                    <div class="gs-card-hint" style="margin-bottom:0.6rem; font-weight:800; text-transform:uppercase;">Fulfillment Mix</div>
+                                                                    <div style="display:flex; align-items:center; justify-content:space-between; padding:0.45rem 0; font-size:0.82rem; border-bottom:1px solid var(--border-color);">
+                            <span style="font-weight:700;">Delivery</span>
+                            <span style="display:flex; align-items:center; gap:0.5rem;">
+                                <span class="gs-pill violet">2 orders</span>
+                                <span style="font-weight:800; color:var(--gs-dark);">₱440</span>
+                            </span>
+                        </div>
+                                                                    <div style="display:flex; align-items:center; justify-content:space-between; padding:0.45rem 0; font-size:0.82rem; border-bottom:1px solid var(--border-color);">
+                            <span style="font-weight:700;">Pickup</span>
+                            <span style="display:flex; align-items:center; gap:0.5rem;">
+                                <span class="gs-pill cyan">1 orders</span>
+                                <span style="font-weight:800; color:var(--gs-dark);">₱90</span>
+                            </span>
+                        </div>
+                                    </div>
+            </div>
+
+        </div>
+
+        
+        <div class="gs-card">
+            <div class="gs-card-header">
+                <div>
+                    <h2 class="gs-card-title">
+                        <i class="fa-solid fa-headset"></i> Customer Support Tickets
+                    </h2>
+                    <span class="gs-card-hint">Open client inquiries and requests</span>
+                </div>
+            </div>
+
+            <div class="gs-grid-3">
+                <div class="gs-stat-card">
+                    <span class="gs-stat-lbl">Open Tickets</span>
+                    <span class="gs-stat-val">2</span>
+                    <span class="gs-stat-sub">Pending or in progress</span>
+                </div>
+
+                <div class="gs-stat-card">
+                    <span class="gs-stat-lbl">High / Urgent Priority</span>
+                    <span class="gs-stat-val" style="color:var(--gs-dark);">0</span>
+                    <span class="gs-stat-sub">Requires priority attention</span>
+                </div>
+
+                <div class="gs-stat-card" style="justify-content:center; align-items:center;">
+                    <a href="http://127.0.0.1:8123/admin/tickets" class="gs-action-btn" style="background:var(--gs-cyan); color:var(--text-inverse); border-color:var(--gs-cyan); font-weight:800;">
+                        Open Support Queue <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+    
+    <section class="gs-module" data-module-panel="inventory" hidden>
+
+                    <div class="gs-alert-banner warn">
+                <span class="gs-alert-icon"><i class="fa-solid fa-boxes-packing"></i></span>
+                <div class="gs-alert-content">
+                    <div class="gs-alert-title">2 materials are at or below restock threshold</div>
+                    <div class="gs-alert-desc">Order replenish stocks to avoid production halts. Total reserved units: 2.00.</div>
+                </div>
+                <a href="http://127.0.0.1:8123/admin/materials?stock_status=low_stock" class="gs-action-btn" style="background:var(--gs-amber); color:var(--text-inverse); border-color:var(--gs-amber); font-weight:800;">
+                    Go to Inventory <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+        
+        
+        <div class="gs-grid-3">
+            <div class="gs-stat-card">
+                <span class="gs-stat-lbl">Registered Materials</span>
+                <span class="gs-stat-val">4</span>
+                <span class="gs-stat-sub">Across 4 material categories</span>
+            </div>
+
+            <div class="gs-stat-card">
+                <span class="gs-stat-lbl">Low Stock Triggers</span>
+                <span class="gs-stat-val" style="color:var(--gs-rose);">2</span>
+                <span class="gs-stat-sub">Materials needing purchase orders</span>
+            </div>
+
+            <div class="gs-stat-card">
+                <span class="gs-stat-lbl">Committed Reserved Units</span>
+                <span class="gs-stat-val">2.00</span>
+                <span class="gs-stat-sub">Currently allocated to in-progress jobs</span>
+            </div>
+        </div>
+
+        
+        <div class="gs-card">
+            <div class="gs-card-header">
+                <div>
+                    <h2 class="gs-card-title">
+                        <i class="fa-solid fa-warehouse"></i> Material Stock Health &amp; Coverage
+                    </h2>
+                    <span class="gs-card-hint">Available supply vs restock trigger points</span>
+                </div>
+
+                <div class="gs-table-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="inventorySearch" placeholder="Search material..." autocomplete="off">
+                </div>
+            </div>
+
+            <div class="gs-table-wrap">
+                <table class="gs-table" id="stockHealthTable">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Category</th>
+                            <th style="text-align:right;">On Hand</th>
+                            <th style="text-align:right;">Reserved</th>
+                            <th style="text-align:right;">Available</th>
+                            <th style="text-align:right;">Trigger</th>
+                            <th style="width:28%;">Coverage</th>
+                            <th style="text-align:right;">Days Cover</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                                                                                <tr class="inv-row" data-name="jamc inkk23">
+                                <td style="font-weight:700;">jamc</td>
+                                <td style="color:var(--gs-faint);">inkk23</td>
+                                <td style="text-align:right; color:var(--gs-faint);">73.00 liters</td>
+                                <td style="text-align:right; color:var(--gs-faint);">0.00</td>
+                                <td style="text-align:right; font-weight:800; color:var(--gs-dark);">73.00 liters</td>
+                                <td style="text-align:right; color:var(--gs-faint);">40,400.00</td>
+                                <td>
+                                    <div class="gs-bar-track">
+                                        <div class="gs-bar-fill" style="width:2%; background:var(--gs-rose);"></div>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-top:0.25rem;">
+                                        <span class="gs-pill rose">CRITICAL</span>
+                                        <span style="font-size:0.7rem; color:var(--gs-faint);">0% of trigger</span>
+                                    </div>
+                                </td>
+                                <td style="text-align:right; font-weight:800; color:var(--gs-dark);">
+                                    75d
+                                </td>
+                            </tr>
+                                                                                <tr class="inv-row" data-name="honda navi motor">
+                                <td style="font-weight:700;">Honda Navi</td>
+                                <td style="color:var(--gs-faint);">motor</td>
+                                <td style="text-align:right; color:var(--gs-faint);">0.00 motor</td>
+                                <td style="text-align:right; color:var(--gs-faint);">0.00</td>
+                                <td style="text-align:right; font-weight:800; color:var(--gs-dark);">0.00 motor</td>
+                                <td style="text-align:right; color:var(--gs-faint);">5.00</td>
+                                <td>
+                                    <div class="gs-bar-track">
+                                        <div class="gs-bar-fill" style="width:2%; background:var(--gs-rose);"></div>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-top:0.25rem;">
+                                        <span class="gs-pill rose">OUT</span>
+                                        <span style="font-size:0.7rem; color:var(--gs-faint);">0% of trigger</span>
+                                    </div>
+                                </td>
+                                <td style="text-align:right; font-weight:800; color:var(--gs-dark);">
+                                    —
+                                </td>
+                            </tr>
+                                                                                <tr class="inv-row" data-name="yellow ink">
+                                <td style="font-weight:700;">yellow</td>
+                                <td style="color:var(--gs-faint);">ink</td>
+                                <td style="text-align:right; color:var(--gs-faint);">89.00 ml</td>
+                                <td style="text-align:right; color:var(--gs-faint);">2.00</td>
+                                <td style="text-align:right; font-weight:800; color:var(--gs-dark);">87.00 ml</td>
+                                <td style="text-align:right; color:var(--gs-faint);">40.00</td>
+                                <td>
+                                    <div class="gs-bar-track">
+                                        <div class="gs-bar-fill" style="width:100%; background:var(--gs-emerald);"></div>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-top:0.25rem;">
+                                        <span class="gs-pill emerald">HEALTHY</span>
+                                        <span style="font-size:0.7rem; color:var(--gs-faint);">100% of trigger</span>
+                                    </div>
+                                </td>
+                                <td style="text-align:right; font-weight:800; color:var(--gs-dark);">
+                                    163d
+                                </td>
+                            </tr>
+                                                                                <tr class="inv-row" data-name="plastic services">
+                                <td style="font-weight:700;">Plastic</td>
+                                <td style="color:var(--gs-faint);">Services</td>
+                                <td style="text-align:right; color:var(--gs-faint);">747.00 pcs</td>
+                                <td style="text-align:right; color:var(--gs-faint);">0.00</td>
+                                <td style="text-align:right; font-weight:800; color:var(--gs-dark);">747.00 pcs</td>
+                                <td style="text-align:right; color:var(--gs-faint);">50.00</td>
+                                <td>
+                                    <div class="gs-bar-track">
+                                        <div class="gs-bar-fill" style="width:100%; background:var(--gs-emerald);"></div>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-top:0.25rem;">
+                                        <span class="gs-pill emerald">HEALTHY</span>
+                                        <span style="font-size:0.7rem; color:var(--gs-faint);">100% of trigger</span>
+                                    </div>
+                                </td>
+                                <td style="text-align:right; font-weight:800; color:var(--gs-dark);">
+                                    —
+                                </td>
+                            </tr>
+                                            </tbody>
+                </table>
+            </div>
+        </div>
+
+    </section>
+
+    
+    <section class="gs-module" data-module-panel="suppliers" hidden>
+
+        
+        <div class="gs-grid-3">
+            <div class="gs-stat-card">
+                <span class="gs-stat-lbl"><i class="fa-solid fa-truck-field" style="color:var(--gs-cyan);"></i> Active Suppliers</span>
+                <span class="gs-stat-val">5</span>
+                <span class="gs-stat-sub">1 purchase orders on file</span>
+            </div>
+
+            <div class="gs-stat-card">
+                <span class="gs-stat-lbl"><i class="fa-solid fa-peso-sign" style="color:var(--gs-emerald);"></i> Total Supplier Spend</span>
+                <span class="gs-stat-val" style="color:var(--gs-emerald);">₱2,800.00</span>
+                <span class="gs-stat-sub">Excludes cancelled purchase orders</span>
+            </div>
+
+            <div class="gs-stat-card">
+                <span class="gs-stat-lbl"><i class="fa-solid fa-hand-holding-dollar" style="color:var(--text-warning);"></i> Outstanding Payables</span>
+                <span class="gs-stat-val" style="color:var(--text-warning);">₱0.00</span>
+                <span class="gs-stat-sub">₱2,800.00 settled to suppliers</span>
+            </div>
+        </div>
+
+        
+        <div class="gs-card" style="margin-bottom:1.15rem;">
+            <div class="gs-card-header">
+                <div>
+                    <h2 class="gs-card-title">
+                        <i class="fa-solid fa-scale-balanced" style="color:var(--gs-magenta);"></i> Unit Cost Comparison
+                    </h2>
+                    <span class="gs-card-hint">Normalised base costs across supplier catalogs</span>
+                </div>
+            </div>
+
+                            <div class="gs-grid-3">
+                                            <div class="gs-stat-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                <strong style="font-size:0.9rem; color:var(--gs-dark);">Honda Navi</strong>
+                                                                    <span class="gs-pill emerald">SAVE 96%</span>
+                                                            </div>
+
+                            <div style="display:flex; flex-direction:column; gap:0.35rem;">
+                                                                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; padding:0.35rem 0.5rem; border-radius:7px; background:var(--success-soft); border:1px solid var(--success-border);">
+                                        <div>
+                                            <span style="font-weight:700;">james the supplier</span>
+                                            <span style="font-size:0.68rem; color:var(--gs-faint); display:block;">Box (25)</span>
+                                        </div>
+                                        <div style="font-weight:800; color:var(--text-success);">
+                                            ₱0.41
+                                        </div>
+                                    </div>
+                                                                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; padding:0.35rem 0.5rem; border-radius:7px; ">
+                                        <div>
+                                            <span style="font-weight:700;">ken the suppplier</span>
+                                            <span style="font-size:0.68rem; color:var(--gs-faint); display:block;">Gallon (100)</span>
+                                        </div>
+                                        <div style="font-weight:800; color:var(--gs-dark);">
+                                            ₱9.99
+                                        </div>
+                                    </div>
+                                                            </div>
+
+                            <div style="font-size:0.71rem; color:var(--gs-faint); margin-top:0.45rem;">
+                                Best option: <strong>james the supplier</strong> (₱0.41/motor)
+                            </div>
+                        </div>
+                                            <div class="gs-stat-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                <strong style="font-size:0.9rem; color:var(--gs-dark);">yellow</strong>
+                                                                    <span class="gs-pill emerald">SAVE 50%</span>
+                                                            </div>
+
+                            <div style="display:flex; flex-direction:column; gap:0.35rem;">
+                                                                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; padding:0.35rem 0.5rem; border-radius:7px; background:var(--success-soft); border:1px solid var(--success-border);">
+                                        <div>
+                                            <span style="font-weight:700;">ken the suppplier</span>
+                                            <span style="font-size:0.68rem; color:var(--gs-faint); display:block;">Box (100)</span>
+                                        </div>
+                                        <div style="font-weight:800; color:var(--text-success);">
+                                            ₱1.00
+                                        </div>
+                                    </div>
+                                                                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; padding:0.35rem 0.5rem; border-radius:7px; ">
+                                        <div>
+                                            <span style="font-weight:700;">rovic the supplier</span>
+                                            <span style="font-size:0.68rem; color:var(--gs-faint); display:block;">Badle (20)</span>
+                                        </div>
+                                        <div style="font-weight:800; color:var(--gs-dark);">
+                                            ₱2.00
+                                        </div>
+                                    </div>
+                                                            </div>
+
+                            <div style="font-size:0.71rem; color:var(--gs-faint); margin-top:0.45rem;">
+                                Best option: <strong>ken the suppplier</strong> (₱1.00/ml)
+                            </div>
+                        </div>
+                                            <div class="gs-stat-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                <strong style="font-size:0.9rem; color:var(--gs-dark);">Plastic</strong>
+                                                                    <span class="gs-pill gray">Single Vendor</span>
+                                                            </div>
+
+                            <div style="display:flex; flex-direction:column; gap:0.35rem;">
+                                                                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; padding:0.35rem 0.5rem; border-radius:7px; background:var(--success-soft); border:1px solid var(--success-border);">
+                                        <div>
+                                            <span style="font-weight:700;">rovic the supplier</span>
+                                            <span style="font-size:0.68rem; color:var(--gs-faint); display:block;">Box (100)</span>
+                                        </div>
+                                        <div style="font-weight:800; color:var(--text-success);">
+                                            ₱4.00
+                                        </div>
+                                    </div>
+                                                            </div>
+
+                            <div style="font-size:0.71rem; color:var(--gs-faint); margin-top:0.45rem;">
+                                Best option: <strong>rovic the supplier</strong> (₱4.00/pcs)
+                            </div>
+                        </div>
+                                    </div>
+                    </div>
+
+        
+        <div class="gs-grid-2">
+
+            
+            <div class="gs-card">
+                <div class="gs-card-header">
+                    <div>
+                        <h2 class="gs-card-title">
+                            <i class="fa-solid fa-users"></i> Supplier Directory &amp; Spend
+                        </h2>
+                        <span class="gs-card-hint">Procurement history</span>
+                    </div>
+                </div>
+
+                <div class="gs-table-wrap">
+                    <table class="gs-table">
+                        <thead>
+                            <tr>
+                                <th>Supplier</th>
+                                <th>Contact</th>
+                                <th style="text-align:right;">POs</th>
+                                <th style="text-align:right;">Spend</th>
+                                <th style="text-align:right;">Open</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                                                            <tr>
+                                    <td style="font-weight:700;">rovic the supplier</td>
+                                    <td style="color:var(--gs-faint);">rovic</td>
+                                    <td style="text-align:right; font-weight:700;">1</td>
+                                    <td style="text-align:right; font-weight:800; color:var(--gs-dark);">₱2,800.00</td>
+                                    <td style="text-align:right;">
+                                                                                    <span class="gs-pill emerald">Settled</span>
+                                                                            </td>
+                                </tr>
+                                                            <tr>
+                                    <td style="font-weight:700;">ken the suppplier</td>
+                                    <td style="color:var(--gs-faint);">alexis</td>
+                                    <td style="text-align:right; font-weight:700;">0</td>
+                                    <td style="text-align:right; font-weight:800; color:var(--gs-dark);">₱0.00</td>
+                                    <td style="text-align:right;">
+                                                                                    <span class="gs-pill emerald">Settled</span>
+                                                                            </td>
+                                </tr>
+                                                            <tr>
+                                    <td style="font-weight:700;">james the supplier</td>
+                                    <td style="color:var(--gs-faint);">jmax</td>
+                                    <td style="text-align:right; font-weight:700;">0</td>
+                                    <td style="text-align:right; font-weight:800; color:var(--gs-dark);">₱0.00</td>
+                                    <td style="text-align:right;">
+                                                                                    <span class="gs-pill emerald">Settled</span>
+                                                                            </td>
+                                </tr>
+                                                            <tr>
+                                    <td style="font-weight:700;">Charl the supplier</td>
+                                    <td style="color:var(--gs-faint);">cha</td>
+                                    <td style="text-align:right; font-weight:700;">0</td>
+                                    <td style="text-align:right; font-weight:800; color:var(--gs-dark);">₱0.00</td>
+                                    <td style="text-align:right;">
+                                                                                    <span class="gs-pill emerald">Settled</span>
+                                                                            </td>
+                                </tr>
+                                                            <tr>
+                                    <td style="font-weight:700;">kim the supplier</td>
+                                    <td style="color:var(--gs-faint);">kim</td>
+                                    <td style="text-align:right; font-weight:700;">0</td>
+                                    <td style="text-align:right; font-weight:800; color:var(--gs-dark);">₱0.00</td>
+                                    <td style="text-align:right;">
+                                                                                    <span class="gs-pill emerald">Settled</span>
+                                                                            </td>
+                                </tr>
+                                                    </tbody>
+                    </table>
+                </div>
+            </div>
+
+            
+            <div class="gs-card">
+                <div class="gs-card-header">
+                    <div>
+                        <h2 class="gs-card-title">
+                            <i class="fa-solid fa-calendar-day"></i> Outstanding Purchase Payables
+                        </h2>
+                        <span class="gs-card-hint">Supplier invoices due</span>
+                    </div>
+                </div>
+
+                <div class="gs-table-wrap">
+                    <table class="gs-table">
+                        <thead>
+                            <tr>
+                                <th>PO Ref</th>
+                                <th>Supplier</th>
+                                <th>Status</th>
+                                <th style="text-align:right;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                                                            <tr>
+                                    <td colspan="4" class="gs-empty-state">No outstanding supplier payables.</td>
+                                </tr>
+                                                    </tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top:1.15rem; padding-top:0.85rem; border-top:1px dashed var(--gs-border);">
+                    <div class="gs-card-hint" style="margin-bottom:0.5rem; font-weight:800; text-transform:uppercase;">Procurement Status Mix</div>
+                    <div style="display:flex; gap:0.45rem; flex-wrap:wrap;">
+                                                    <span class="gs-pill emerald">
+                                Received: 1 · ₱2,800
+                            </span>
+                                            </div>
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+        </main>
+    </div>
+
+            <div class="edit-modal-backdrop " id="modal-sa-security">
+    <div class="edit-modal-box" style="max-width: 520px;" x-data="{ tab: 'password' }">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fa-solid fa-shield-halved" style="color: var(--text-magenta);"></i> Security &amp; Credentials
+            </h3>
+            <button type="button" onclick="closeEditModal('modal-sa-security')" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--text-subtle); line-height: 1;">&times;</button>
+        </div>
+
+        
+        <div style="padding: 0.75rem 0.9rem; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; display: block;">Registered Account Email</span>
+                <strong style="font-size: 0.88rem; color: var(--text-main); letter-spacing: 0.5px;">gr************@gmail.com</strong>
+            </div>
+        </div>
+
+        
+        <div style="display: flex; gap: 0.4rem; margin-bottom: 1.15rem; background: var(--bg-subtle); padding: 0.25rem; border-radius: 10px;">
+            <button type="button"
+                    @click="tab = 'password'"
+                    :style="tab === 'password' ? 'flex: 1; padding: 0.5rem 0.75rem; border: none; background: var(--bg-surface); color: var(--text-accent); font-weight: 800; font-size: 0.85rem; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; gap: 0.45rem;' : 'flex: 1; padding: 0.5rem 0.75rem; border: none; background: transparent; color: var(--text-muted); font-weight: 700; font-size: 0.85rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.45rem;'">
+                <i class="fa-solid fa-key"></i> Change Password
+                            </button>
+                    </div>
+
+
+        
+        <div x-show="tab === 'password'" x-cloak>
+            
+            
+            
+            
+            
+                            
+                <form action="http://127.0.0.1:8123/super-admin/password/send-otp" method="POST" x-data="{ showPass: false }">
+                    <input type="hidden" name="_token" value="Aysnej9m5dMNwpcX1jQ5L7hMSKKhkzhFvo8WqpO8" autocomplete="off">
+                    <div style="margin-bottom: 0.85rem;">
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">New Password *</label>
+                        <div style="position: relative;">
+                            <input :type="showPass ? 'text' : 'password'" name="new_password" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" required style="width: 100%; padding: 0.6rem 2.5rem 0.6rem 0.85rem; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem;">
+                            <button type="button" @click="showPass = !showPass" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted);">
+                                <i class="fa-solid" :class="showPass ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 0.85rem;">
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">Confirm New Password *</label>
+                        <div style="position: relative;">
+                            <input :type="showPass ? 'text' : 'password'" name="new_password_confirmation" placeholder="Repeat new password" autocomplete="new-password" minlength="8" required style="width: 100%; padding: 0.6rem 2.5rem 0.6rem 0.85rem; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem;">
+                            <button type="button" @click="showPass = !showPass" tabindex="-1" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted);">
+                                <i class="fa-solid" :class="showPass ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    
+                    <div style="margin-bottom: 0.85rem; padding: 0.65rem 0.8rem; background: var(--accent-soft); border: 1px solid var(--info-border); border-radius: 8px; display: flex; align-items: center; gap: 0.6rem;">
+                        <i class="fa-solid fa-envelope" style="color: var(--text-accent); font-size: 1.05rem; flex-shrink: 0;"></i>
+                        <p style="font-size: 0.78rem; color: var(--text-accent); margin: 0; line-height: 1.4;">
+                            Security verification code will be sent automatically to: <strong>gr************@gmail.com</strong>
+                        </p>
+                    </div>
+
+                    
+                    <div style="margin-bottom: 1rem; border: 1px solid var(--brand-magenta-soft); border-radius: 10px; padding: 0.75rem 0.85rem; background: var(--brand-magenta-soft);">
+                        <label style="font-size: 0.82rem; font-weight: 800; color: var(--text-magenta); display: block; margin-bottom: 0.3rem;">
+                            <i class="fa-solid fa-key"></i> Current Password
+                        </label>
+                        <div style="position: relative;">
+                            <input type="password" name="super_admin_password" id="input-sec-pw-pass-request" required autocomplete="new-password" placeholder="Confirm your current password first" style="width: 100%; padding: 0.6rem 2.5rem 0.6rem 0.85rem; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem;">
+                            <button type="button" onclick="togglePasswordVisibility('input-sec-pw-pass-request', 'eye-icon-sec-pw-pass-request')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted);">
+                                <i class="fa-solid fa-eye" id="eye-icon-sec-pw-pass-request"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem;">
+                        <button type="button" class="btn btn-outline" onclick="closeEditModal('modal-sa-security')">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="background: var(--accent-color); border: none;">
+                            <i class="fa-solid fa-paper-plane"></i> Send Security Code
+                        </button>
+                    </div>
+                </form>
+                    </div>
+
+
+            </div>
+</div>
+    
+    <script>
+        function openEditModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+
+        function closeEditModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input && icon) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+        }
+
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('edit-modal-backdrop')) {
+                e.target.classList.remove('active');
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.edit-modal-backdrop.active').forEach(modal => {
+                    modal.classList.remove('active');
+                });
+            }
+        });
+
+        // Click-to-toggle sidebar groups (Stocks): every click on the parent
+        // only opens/closes the submenu — it never navigates directly.
+        document.querySelectorAll('[data-nav-group] .admin-nav-parent').forEach(function (parent) {
+            parent.addEventListener('click', function (e) {
+                e.preventDefault();
+                var group = parent.closest('[data-nav-group]');
+                if (!group) return;
+                document.querySelectorAll('[data-nav-group].open').forEach(function (g) {
+                    if (g !== group) g.classList.remove('open');
+                });
+                group.classList.toggle('open');
+            });
+        });
+        document.querySelectorAll('[data-nav-group] .admin-nav-subitem').forEach(function (sub) {
+            sub.addEventListener('click', function () {
+                sub.classList.add('nav-pressed');
+            });
+        });
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('[data-nav-group]')) {
+                document.querySelectorAll('[data-nav-group].open').forEach(function (g) {
+                    if (g.querySelector('.admin-nav-subitem.active')) return; // keep active section expanded
+                    g.classList.remove('open');
+                });
+            }
+        });
+    </script>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const ANALYTICS_URL = "http://127.0.0.1:8123/super-admin/analytics/data";
+    const MODULES = ['overview', 'revenue', 'collections', 'operations', 'inventory', 'suppliers'];
+    const CHARTS = {};
+
+    // ── PHP Injected Datasets ──────────────────────────────────────────
+    const initTrendLabels  = ["Dec 2025","Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026","Jun 2026","Jul 2026","Aug 2026","Sep 2026","Oct 2026","Nov 2026"];
+    const initTrendRevenue = [0,0,0,0,0,0,0,0,0,0,0,530];
+    const initTrendOrders  = [0,0,0,0,0,0,0,0,0,0,0,3];
+
+    const revenueLabels = ["PBC ID","not custom item"];
+    const revenueData   = [350,180];
+    const unitsLabels   = ["not custom item","PBC ID"];
+    const unitsData     = [2,1];
+
+    const donutData   = [180, 350];
+    const donutCounts = [2, 1];
+    const donutLabels = ['Custom Orders', 'Regular / Ready-Made'];
+
+    const catLabels   = ["Identification"];
+    const catRevenue  = [530];
+    const catUnits    = [3];
+
+    const cashData = [
+        0,
+        45,
+        45,
+    ];
+    const cashLabels = ['Collected (Verified)', 'Pending Downpayments', 'Awaiting Verification'];
+
+    // ── Global Chart.js Configuration ──────────────────────────────────
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.font.size   = 11.5;
+    Chart.defaults.color       = '#64748B';
+
+    const peso = (val, dec = 2) => {
+        const num = parseFloat(val || 0);
+        // Smart formatting: drop decimals for amounts >= 1M
+        const smartDec = num >= 1000000 ? 0 : dec;
+        return '₱' + num.toLocaleString('en-PH', {
+            minimumFractionDigits: smartDec,
+            maximumFractionDigits: smartDec
+        });
+    };
+
+    // ══════════════════════════════════════════════════════════════════
+    //  1. MODULE SWITCHING & TAB SYNCHRONIZATION
+    // ══════════════════════════════════════════════════════════════════
+    function activateModule(name, opts = {}) {
+        if (!MODULES.includes(name)) name = 'overview';
+
+        // Update nav buttons
+        document.querySelectorAll('#moduleNav .gs-nav-btn').forEach(btn => {
+            btn.classList.toggle('is-active', btn.dataset.module === name);
+        });
+
+        // Update module panels
+        document.querySelectorAll('[data-module-panel]').forEach(panel => {
+            const active = panel.dataset.modulePanel === name;
+            panel.hidden = !active;
+            panel.classList.toggle('is-active', active);
+        });
+
+        // Update KPI card active indicators
+        document.querySelectorAll('.gs-kpi-card').forEach(card => {
+            card.classList.toggle('is-active-tab', card.dataset.targetModule === name);
+        });
+
+        if (!opts.fromHistory) {
+            try { history.replaceState(null, '', '#' + name); } catch (e) {}
+        }
+
+        // Resize Chart.js canvases that were previously hidden
+        requestAnimationFrame(() => {
+            Object.values(CHARTS).forEach(chart => {
+                if (chart && typeof chart.resize === 'function') {
+                    try { chart.resize(); } catch (e) {}
+                }
+            });
+        });
+    }
+
+    // Attach click listener to module navigation buttons
+    document.querySelectorAll('#moduleNav .gs-nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => activateModule(btn.dataset.module));
+    });
+
+    // Attach click listener to KPI cards for smart tab navigation
+    document.querySelectorAll('.gs-kpi-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const mod = card.dataset.targetModule;
+            if (mod) activateModule(mod);
+        });
+    });
+
+    // ══════════════════════════════════════════════════════════════════
+    //  2. PROPORTIONAL TREND CHART (Revenue & Order Velocity)
+    // ══════════════════════════════════════════════════════════════════
+    let currentPeriod = 'monthly';
+    let currentRange  = 'all';
+
+    function createRevenueGradient(ctx) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 270);
+        gradient.addColorStop(0, 'rgba(0, 153, 255, 0.22)');
+        gradient.addColorStop(1, 'rgba(0, 153, 255, 0.00)');
+        return gradient;
+    }
+
+    function buildTrendChart(labels, revenue, orders) {
+        if (CHARTS.trend) CHARTS.trend.destroy();
+        const canvas = document.getElementById('trendChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        CHARTS.trend = new Chart(ctx, {
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: 'Orders',
+                        data: orders,
+                        backgroundColor: 'rgba(0, 153, 255, 0.14)',
+                        borderColor: 'rgba(0, 153, 255, 0.40)',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        maxBarThickness: 26,
+                        barPercentage: 0.6,
+                        categoryPercentage: 0.6,
+                        yAxisID: 'yOrders',
+                        order: 2,
+                    },
+                    {
+                        type: 'line',
+                        label: 'Revenue (₱)',
+                        data: revenue,
+                        borderColor: '#0099FF',
+                        backgroundColor: createRevenueGradient(ctx),
+                        borderWidth: 2.5,
+                        tension: 0.38,
+                        fill: true,
+                        pointBackgroundColor: '#FFFFFF',
+                        pointBorderColor: '#0099FF',
+                        pointBorderWidth: 2,
+                        pointRadius: 4.5,
+                        pointHoverRadius: 7,
+                        pointHoverBackgroundColor: '#0099FF',
+                        pointHoverBorderColor: '#FFFFFF',
+                        pointHoverBorderWidth: 2,
+                        yAxisID: 'yRevenue',
+                        order: 1,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                onClick(evt, elements) {
+                    if (!elements.length) return;
+                    const idx = elements[0].index;
+                    openTrendDrill(labels[idx], revenue[idx], orders[idx]);
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        align: 'end',
+                        labels: {
+                            boxWidth: 12,
+                            boxHeight: 12,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            font: { weight: '600', size: 11 },
+                            padding: 12,
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                        titleFont: { weight: '700', size: 12 },
+                        bodyFont: { size: 11.5 },
+                        padding: 10,
+                        cornerRadius: 9,
+                        callbacks: {
+                            label(context) {
+                                if (context.dataset.label === 'Revenue (₱)') {
+                                    return '  Revenue: ' + peso(context.raw);
+                                }
+                                return '  Orders: ' + context.raw + ' orders';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { maxTicksLimit: 12, font: { weight: '600' } },
+                    },
+                    yRevenue: {
+                        position: 'left',
+                        beginAtZero: true,
+                        grid: { color: '#F1F5F9' },
+                        ticks: {
+                            callback: v => '₱' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+                        },
+                    },
+                    yOrders: {
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: { display: false },
+                        ticks: {
+                            precision: 0,
+                            callback: v => v + ' ord'
+                        },
+                    },
+                },
+            },
+        });
+    }
+
+    function openTrendDrill(label, revenue, orders) {
+        const box = document.getElementById('trendDrillBox');
+        const body = document.getElementById('trendDrillContent');
+        if (!box || !body) return;
+
+        const avg = orders > 0 ? (revenue / orders) : 0;
+        body.innerHTML = `
+            <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:1rem;">
+                <div class="gs-stat-card" style="padding:0.65rem 0.8rem;">
+                    <span class="gs-stat-lbl">Timeline Window</span>
+                    <span class="gs-stat-val" style="font-size:1.1rem;">${label}</span>
+                </div>
+                <div class="gs-stat-card" style="padding:0.65rem 0.8rem;">
+                    <span class="gs-stat-lbl">Window Revenue</span>
+                    <span class="gs-stat-val" style="font-size:1.1rem; color:var(--gs-cyan);">${peso(revenue)}</span>
+                </div>
+                <div class="gs-stat-card" style="padding:0.65rem 0.8rem;">
+                    <span class="gs-stat-lbl">Order Volume</span>
+                    <span class="gs-stat-val" style="font-size:1.1rem; color:var(--gs-dark);">${orders} orders</span>
+                </div>
+                <div class="gs-stat-card" style="padding:0.65rem 0.8rem;">
+                    <span class="gs-stat-lbl">Average Ticket Size</span>
+                    <span class="gs-stat-val" style="font-size:1.1rem; color:var(--text-success);">${peso(avg, 0)}</span>
+                </div>
+            </div>`;
+        box.classList.add('is-open');
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  3. DYNAMIC AJAX DATA FETCH (Period & Global Range Switcher)
+    // ══════════════════════════════════════════════════════════════════
+    async function fetchAnalyticsData() {
+        const spinner = document.getElementById('trendSpinner');
+        const refreshBtn = document.getElementById('btnRefreshAnalytics');
+        if (spinner) spinner.classList.add('is-visible');
+        if (refreshBtn) refreshBtn.classList.add('refreshing');
+
+        try {
+            const url = `${ANALYTICS_URL}?period=${currentPeriod}&range=${currentRange}`;
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) throw new Error('Network response error');
+            const data = await res.json();
+
+            // Re-render trend chart
+            if (data.labels && data.revenue && data.orders) {
+                buildTrendChart(data.labels, data.revenue, data.orders);
+            }
+
+            // Update KPI cards smoothly if data returned
+            if (data.kpis) {
+                updateKPIs(data.kpis);
+            }
+        } catch (err) {
+            console.error('Analytics load error:', err);
+        } finally {
+            if (spinner) spinner.classList.remove('is-visible');
+            if (refreshBtn) refreshBtn.classList.remove('refreshing');
+        }
+    }
+
+    function updateKPIs(kpis) {
+        const setVal = (id, txt) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = txt;
+        };
+
+        // Smart peso with cents span for KPI values
+        const pesoHtml = (id, val) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const num = parseFloat(val || 0);
+            const whole = Math.floor(num);
+            const cents = String(Math.round((num - whole) * 100)).padStart(2, '0');
+            const wholeStr = whole.toLocaleString('en-PH');
+            el.innerHTML = '₱' + wholeStr + '<span class="gs-val-cents">.' + cents + '</span>';
+        };
+
+        if (kpis.totalRevenue !== undefined) pesoHtml('val-revenue', kpis.totalRevenue);
+        if (kpis.scopedOrderCount !== undefined) setVal('val-orders-count', kpis.scopedOrderCount);
+        if (kpis.averageOrderValue !== undefined) setVal('val-avg-order', Math.round(kpis.averageOrderValue).toLocaleString());
+        if (kpis.pendingVerificationTotal !== undefined) pesoHtml('val-pending', kpis.pendingVerificationTotal);
+        if (kpis.pendingVerificationCount !== undefined) setVal('val-proofs-count', kpis.pendingVerificationCount);
+        if (kpis.totalCollected !== undefined) pesoHtml('val-collected', kpis.totalCollected);
+        if (kpis.collectedThisMonth !== undefined) setVal('val-collected-month', parseFloat(kpis.collectedThisMonth || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 }));
+        if (kpis.uncollectedTotal !== undefined) pesoHtml('val-uncollected', kpis.uncollectedTotal);
+        if (kpis.totalOrdersCount !== undefined) setVal('val-orders', kpis.totalOrdersCount);
+        if (kpis.inProgressOrdersCount !== undefined) setVal('val-inprogress-count', kpis.inProgressOrdersCount);
+        if (kpis.pendingOrdersCount !== undefined) setVal('val-pending-orders-count', kpis.pendingOrdersCount);
+    }
+
+    // Attach listeners to Trend Period switcher
+    document.querySelectorAll('#trendPeriodTabs button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const p = btn.dataset.period;
+            if (p === currentPeriod) return;
+            currentPeriod = p;
+
+            document.querySelectorAll('#trendPeriodTabs button').forEach(b => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+
+            fetchAnalyticsData();
+        });
+    });
+
+    // Attach listeners to Global Range selector
+    document.querySelectorAll('#globalRangeSelector .gs-range-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const r = btn.dataset.range;
+            if (r === currentRange) return;
+            currentRange = r;
+
+            document.querySelectorAll('#globalRangeSelector .gs-range-btn').forEach(b => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+
+            fetchAnalyticsData();
+        });
+    });
+
+    // Attach Refresh button listener
+    const refreshBtn = document.getElementById('btnRefreshAnalytics');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', fetchAnalyticsData);
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  4. CASH POSITION DONUT CHARTS (Overview + Collections)
+    // ══════════════════════════════════════════════════════════════════
+    function buildCashDonut(canvasId) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return null;
+
+        return new Chart(canvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: cashLabels,
+                datasets: [{
+                    data: cashData,
+                    backgroundColor: ['#0099FF', '#F59E0B', '#EF4444'],
+                    borderColor: ['#FFFFFF', '#FFFFFF', '#FFFFFF'],
+                    borderWidth: 3,
+                    hoverOffset: 6,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '74%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: ctx => `  ${ctx.label}: ${peso(ctx.raw)}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+    CHARTS.cashOverview = buildCashDonut('cashDonutOverview');
+    CHARTS.cashModule   = buildCashDonut('collectionChartModule');
+
+    // ══════════════════════════════════════════════════════════════════
+    //  5. CUSTOM vs REGULAR ORDERS DONUT
+    // ══════════════════════════════════════════════════════════════════
+    function buildTypeDonut() {
+        const canvas = document.getElementById('typeDonutChart');
+        if (!canvas) return null;
+
+        return new Chart(canvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: donutLabels,
+                datasets: [{
+                    data: donutData,
+                    backgroundColor: ['#0099FF', '#10B981'],
+                    borderColor: ['#FFFFFF', '#FFFFFF'],
+                    borderWidth: 3,
+                    hoverOffset: 6,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '74%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                        cornerRadius: 8,
+                        callbacks: {
+                            label(ctx) {
+                                const cnt = donutCounts[ctx.dataIndex] || 0;
+                                return `  ${ctx.label}: ${peso(ctx.raw)} (${cnt} orders)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    CHARTS.typeDonut = buildTypeDonut();
+
+    // ══════════════════════════════════════════════════════════════════
+    //  6. REVENUE BY PRODUCT CATEGORY (MAX BAR THICKNESS CONTROLLED!)
+    // ══════════════════════════════════════════════════════════════════
+    const categoryPalette = ['#0099FF', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#EC4899', '#06B6D4', '#84CC16', '#6366F1'];
+
+    function buildCategoryChart() {
+        const canvas = document.getElementById('categoryBarChart');
+        if (!canvas) return null;
+
+        return new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: catLabels,
+                datasets: [{
+                    label: 'Revenue',
+                    data: catRevenue,
+                    backgroundColor: catLabels.map((_, i) => categoryPalette[i % categoryPalette.length]),
+                    borderRadius: 8,
+                    maxBarThickness: 32,
+                    barPercentage: 0.6,
+                    categoryPercentage: 0.7,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: ctx => '  Revenue: ' + peso(ctx.raw)
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { weight: '700' } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#F1F5F9' },
+                        ticks: {
+                            callback: v => '₱' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+                        }
+                    }
+                }
+            }
+        });
+    }
+    CHARTS.category = buildCategoryChart();
+
+    // ══════════════════════════════════════════════════════════════════
+    //  7. TOP SELLERS CHART (PROPORTIONAL HORIZONTAL BARS!)
+    // ══════════════════════════════════════════════════════════════════
+    let currentSellerMode = 'revenue';
+
+    function buildSellersChart(labels, data, mode) {
+        if (CHARTS.sellers) CHARTS.sellers.destroy();
+        const canvas = document.getElementById('topSellersChart');
+        if (!canvas) return;
+
+        CHARTS.sellers = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: mode === 'revenue' ? 'Revenue (₱)' : 'Units Sold',
+                    data: data,
+                    backgroundColor: labels.map((_, i) =>
+                        i === 0 ? '#F59E0B' : (i === 1 ? '#94A3B8' : (i === 2 ? '#D97706' : '#0099FF'))
+                    ),
+                    borderRadius: 6,
+                    maxBarThickness: 24,
+                    barPercentage: 0.65,
+                    categoryPercentage: 0.75,
+                }],
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                        cornerRadius: 8,
+                        callbacks: {
+                            label(ctx) {
+                                return mode === 'revenue'
+                                    ? '  Revenue: ' + peso(ctx.raw)
+                                    : '  Sold: ' + parseInt(ctx.raw).toLocaleString() + ' units';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: { color: '#F1F5F9' },
+                        ticks: {
+                            callback: v => mode === 'revenue'
+                                ? '₱' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+                                : v + ' u'
+                        }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { font: { weight: '600' } }
+                    }
+                }
+            }
+        });
+    }
+    buildSellersChart(revenueLabels, revenueData, 'revenue');
+
+    // Toggle seller mode By Revenue / By Units
+    document.querySelectorAll('#sellerModeTabs button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mode = btn.dataset.mode;
+            if (mode === currentSellerMode) return;
+            currentSellerMode = mode;
+
+            document.querySelectorAll('#sellerModeTabs button').forEach(b => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+
+            const revTable = document.getElementById('rankTableRevenue');
+            const unitTable = document.getElementById('rankTableUnits');
+            if (revTable)  revTable.style.display  = mode === 'revenue' ? '' : 'none';
+            if (unitTable) unitTable.style.display = mode === 'units'   ? '' : 'none';
+
+            if (mode === 'revenue') {
+                buildSellersChart(revenueLabels, revenueData, 'revenue');
+            } else {
+                buildSellersChart(unitsLabels, unitsData, 'units');
+            }
+        });
+    });
+
+    // ══════════════════════════════════════════════════════════════════
+    //  8. LIVE CLIENT-SIDE TABLE SEARCH FILTERS
+    // ══════════════════════════════════════════════════════════════════
+    // Product ranking search
+    const rankSearch = document.getElementById('rankingSearch');
+    if (rankSearch) {
+        rankSearch.addEventListener('input', function () {
+            const q = this.value.toLowerCase().trim();
+            document.querySelectorAll('.rank-row').forEach(row => {
+                const name = row.dataset.name || '';
+                row.style.display = name.includes(q) ? '' : 'none';
+            });
+        });
+    }
+
+    // Inventory search
+    const invSearch = document.getElementById('inventorySearch');
+    if (invSearch) {
+        invSearch.addEventListener('input', function () {
+            const q = this.value.toLowerCase().trim();
+            document.querySelectorAll('.inv-row').forEach(row => {
+                const name = row.dataset.name || '';
+                row.style.display = name.includes(q) ? '' : 'none';
+            });
+        });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  9. INITIALIZATION
+    // ══════════════════════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', function () {
+        const hash = (window.location.hash || '').replace('#', '');
+        activateModule(MODULES.includes(hash) ? hash : 'overview', { fromHistory: true });
+        buildTrendChart(initTrendLabels, initTrendRevenue, initTrendOrders);
+    });
+
+    window.activateModule = activateModule;
+})();
+</script>
+</body>
+</html>

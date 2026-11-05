@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="color-scheme" content="light dark">
+    <meta name="csrf-token" content="Aysnej9m5dMNwpcX1jQ5L7hMSKKhkzhFvo8WqpO8">
+    <title>Admin Operational Dashboard - Grafika South</title>
+
+    <link rel="icon" type="image/png" href="http://127.0.0.1:8123/images/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Alpine.js (drives admin modals & dynamic purchase-order rows) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Tailwind CSS (Preflight Disabled to preserve existing custom styles) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            corePlugins: {
+                preflight: false,
+            },
+            theme: {
+                extend: {
+                    // Neutral scales resolve to the theme tokens so utility
+                    // markup (bg-gray-50, text-slate-400, border-slate-200)
+                    // themes together with the rest of the UI.
+                    // 900/950 stay literal - they are used as dark backdrops.
+                    colors: {
+                        slate: {
+                            50: 'var(--bg-surface-2)',
+                            100: 'var(--bg-subtle)',
+                            200: 'var(--border-color)',
+                            300: 'var(--border-strong)',
+                            400: 'var(--text-subtle)',
+                            500: 'var(--text-muted)',
+                            600: 'var(--text-muted)',
+                            700: 'var(--text-main)',
+                            800: 'var(--text-main)',
+                        },
+                        gray: {
+                            50: 'var(--bg-surface-2)',
+                            100: 'var(--bg-subtle)',
+                            200: 'var(--border-color)',
+                            300: 'var(--border-strong)',
+                            400: 'var(--text-subtle)',
+                            500: 'var(--text-muted)',
+                            600: 'var(--text-muted)',
+                            700: 'var(--text-main)',
+                            800: 'var(--text-main)',
+                        },
+                    },
+                },
+            },
+        }
+    </script>
+
+    <script>
+    (function () {
+        var root = document.documentElement;
+        var STORAGE_KEY = 'grafika-theme';
+        var mql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+        function readStored() {
+            try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
+        }
+
+        function syncToggles(dark) {
+            var buttons = document.querySelectorAll('[data-theme-toggle]');
+            for (var i = 0; i < buttons.length; i++) {
+                var label = dark ? 'Switch to light theme' : 'Switch to dark theme';
+                buttons[i].setAttribute('aria-pressed', dark ? 'true' : 'false');
+                buttons[i].setAttribute('aria-label', label);
+                buttons[i].setAttribute('title', label);
+            }
+        }
+
+        function apply(mode) {
+            var dark = mode === 'dark';
+            root.classList.toggle('theme-dark', dark);
+            root.style.colorScheme = dark ? 'dark' : 'light';
+            syncToggles(dark);
+        }
+
+        // 1) Resolve the mode BEFORE first paint (no flash of the wrong theme).
+        var stored = readStored();
+        var prefersDark = mql ? mql.matches : false;
+        apply(stored === 'dark' || (stored !== 'light' && prefersDark) ? 'dark' : 'light');
+
+        // 1b) This script runs in <head>, before the toggle buttons exist.
+        //     Re-sync their ARIA state once the DOM is parsed.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () {
+                syncToggles(root.classList.contains('theme-dark'));
+            });
+        } else {
+            syncToggles(root.classList.contains('theme-dark'));
+        }
+
+        // 2) Toggle handler — delegated so it covers every button instance.
+        document.addEventListener('click', function (e) {
+            var button = e.target.closest ? e.target.closest('[data-theme-toggle]') : null;
+            if (!button) return;
+            var next = root.classList.contains('theme-dark') ? 'light' : 'dark';
+            apply(next);
+            try { localStorage.setItem(STORAGE_KEY, next); } catch (err) {}
+        });
+
+        // 3) Follow the OS preference only while the user has not chosen explicitly.
+        if (mql && mql.addEventListener) {
+            mql.addEventListener('change', function (e) {
+                if (!readStored()) apply(e.matches ? 'dark' : 'light');
+            });
+        }
+    })();
+</script>
+
+    <style>
+        :root {
+            /* ---- Legacy CMYK aliases (kept: other views still use them) ---- */
+            --cmyk-cyan: #0099FF;
+            --cmyk-cyan-hover: #0080FF;
+            --cmyk-cyan-light: #E6F4FF;
+
+            --cmyk-magenta: #EC008C;
+            --cmyk-magenta-hover: #C80075;
+            --cmyk-magenta-light: #FDE8F5;
+
+            --cmyk-yellow: #EAB308;
+            --cmyk-yellow-dark: #CA8A04;
+            --cmyk-yellow-light: #FEF9C3;
+
+            --cmyk-key: #0F172A;
+            --cmyk-key-light: #1E293B;
+        }
+
+        :root {
+    /* ---- Layer 1: PRIMITIVES (raw values) ---- */
+    --p-white: #FFFFFF;
+
+    --p-ink-950: #0B1120;
+    --p-ink-900: #0F172A;
+    --p-ink-850: #172033;
+    --p-ink-800: #1E293B;
+    --p-ink-700: #334155;
+    --p-ink-600: #475569;
+    --p-ink-500: #64748B;
+    --p-ink-400: #94A3B8;
+    --p-ink-300: #CBD5E1;
+    --p-ink-200: #E2E8F0;
+    --p-ink-100: #F1F5F9;
+    --p-ink-050: #F8FAFC;
+
+    --p-cyan-050: #E6F4FF;
+    --p-cyan-100: #BAE6FD;
+    --p-cyan-300: #7DD3FC;
+    --p-cyan-400: #38BDF8;
+    --p-cyan-500: #0099FF;
+    --p-cyan-600: #0080FF;
+
+    --p-magenta-050: #FDE8F5;
+    --p-magenta-100: #FBCFE8;
+    --p-magenta-400: #F472B6;
+    --p-magenta-500: #EC008C;
+    --p-magenta-600: #C80075;
+
+    --p-yellow-050: #FEF9C3;
+    --p-yellow-100: #FDE047;
+    --p-yellow-500: #EAB308;
+    --p-yellow-600: #CA8A04;
+
+    --p-violet-050: #F5F3FF;
+    --p-violet-100: #DDD6FE;
+    --p-violet-500: #7C3AED;
+    --p-violet-600: #6D28D9;
+
+    --p-green-050: #F0FDF4;
+    --p-green-100: #BBF7D0;
+    --p-green-500: #22C55E;
+    --p-green-600: #16A34A;
+    --p-green-700: #15803D;
+    --p-green-800: #14532D;
+
+    --p-red-050: #FEF2F2;
+    --p-red-100: #FEE2E2;
+    --p-red-500: #EF4444;
+    --p-red-600: #DC2626;
+    --p-red-700: #B91C1C;
+    --p-red-800: #991B1B;
+
+    --p-amber-050: #FEF3C7;
+    --p-amber-100: #FDE68A;
+    --p-amber-500: #F59E0B;
+    --p-amber-600: #D97706;
+    --p-amber-700: #B45309;
+    --p-amber-800: #92400E;
+
+    --p-orange-050: #FFF7ED;
+    --p-orange-100: #FED7AA;
+    --p-orange-500: #EA580C;
+    --p-orange-600: #C2410C;
+    --p-orange-700: #9A3412;
+
+    --p-gray-050: #F9FAFB;
+    --p-gray-100: #F3F4F6;
+    --p-gray-200: #E5E7EB;
+    --p-gray-300: #D1D5DB;
+    --p-gray-400: #9CA3AF;
+    --p-gray-500: #6B7280;
+    --p-gray-600: #4B5563;
+    --p-gray-700: #374151;
+    --p-gray-800: #1F2937;
+    --p-gray-900: #111827;
+
+    /* ---- Layer 2: SEMANTIC (light theme is the default) ---- */
+    --accent-light: var(--p-cyan-050);
+    --primary-dark: var(--cmyk-key);
+
+    --bg-page: var(--p-ink-050);
+    --bg-surface: var(--p-white);
+    --bg-surface-2: #FBFCFD;
+    --bg-subtle: var(--p-ink-100);
+    --bg-stripe: var(--p-ink-050);
+    --bg-elevated: var(--p-white);
+    --bg-inverse: var(--p-ink-900);
+    --bg-overlay: rgba(15, 23, 42, 0.5);
+
+    --text-main: var(--p-ink-900);
+    --text-muted: var(--p-ink-500);
+    --text-subtle: var(--p-ink-400);
+    --text-disabled: var(--p-ink-300);
+    --text-inverse: var(--p-white);
+    --text-accent: var(--p-cyan-600);
+    --text-success: var(--p-green-700);
+    --text-warning: var(--p-amber-700);
+    --text-danger: var(--p-red-700);
+    --text-magenta: var(--p-magenta-600);
+    --text-violet: var(--p-violet-600);
+
+    --border-color: var(--p-ink-200);
+    --border-strong: var(--p-ink-300);
+    --border-accent: var(--p-cyan-500);
+
+    --accent-color: var(--p-cyan-500);
+    --accent-hover: var(--p-cyan-600);
+    --accent-soft: var(--p-cyan-050);
+    --accent-contrast: var(--p-white);
+    --accent-ring: rgba(0, 153, 255, 0.35);
+
+    --success-color: var(--p-green-600);
+    --success-soft: var(--p-green-050);
+    --success-border: var(--p-green-100);
+
+    --warning-color: var(--p-amber-600);
+    --warning-soft: var(--p-amber-050);
+    --warning-border: var(--p-amber-100);
+
+    --danger-color: var(--p-red-600);
+    --danger-soft: var(--p-red-050);
+    --danger-border: var(--p-red-100);
+
+    --info-color: var(--p-cyan-600);
+    --info-soft: var(--p-cyan-050);
+    --info-border: var(--p-cyan-100);
+
+    --brand-cyan-fg: var(--p-cyan-500);
+    --brand-cyan-soft: var(--p-cyan-050);
+    --brand-magenta-fg: var(--p-magenta-500);
+    --brand-magenta-soft: var(--p-magenta-050);
+    --brand-yellow-fg: var(--p-yellow-600);
+    --brand-yellow-soft: var(--p-yellow-050);
+    --brand-violet-fg: var(--p-violet-500);
+    --brand-violet-soft: var(--p-violet-050);
+    --brand-key-fg: var(--p-ink-800);
+
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 4px 12px -4px rgba(15, 23, 42, 0.10);
+    --shadow-lg: 0 16px 40px -16px rgba(15, 23, 42, 0.18);
+
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-pill: 9999px;
+
+    /* ---- Layer 3: COMPONENT ---- */
+    --btn-primary-bg: var(--accent-color);
+    --btn-primary-bg-hover: var(--accent-hover);
+    --btn-primary-text: var(--accent-contrast);
+    --btn-outline-border: var(--border-strong);
+    --btn-outline-text: var(--text-main);
+    --btn-outline-bg-hover: var(--bg-subtle);
+    --btn-ghost-text: var(--text-main);
+    --btn-ghost-bg-hover: var(--bg-subtle);
+
+    --card-bg: var(--bg-surface);
+    --card-border: var(--border-color);
+    --card-shadow: var(--shadow-sm);
+    --card-shadow-hover: var(--shadow-md);
+
+    /* Header chrome. The storefront header is a glass layer, the admin
+       topbar is opaque — they share the same colour language. */
+    --header-bg: rgba(255, 255, 255, 0.88);
+    --header-solid: var(--p-white);
+    --header-border: var(--border-color);
+    --header-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.07);
+    --header-text: var(--text-main);
+    --header-text-muted: var(--text-muted);
+    --header-hover-bg: var(--bg-subtle);
+    --header-active-bg: var(--accent-soft);
+    --header-control-bg: var(--bg-surface);
+    --header-control-border: var(--border-strong);
+    --header-control-text: var(--text-muted);
+    --header-brand-chip: transparent;
+
+    --input-bg: var(--bg-surface);
+    --input-border: var(--border-strong);
+    --input-text: var(--text-main);
+    --input-placeholder: var(--p-ink-400);
+
+    --focus-ring: 0 0 0 3px var(--accent-ring);
+}
+
+/* ---- Layer 2 overrides: DARK theme ---- */
+html.theme-dark {
+    --bg-page: #080D18;
+    --bg-surface: #0E1626;
+    --bg-surface-2: #131D31;
+    --bg-subtle: #18233A;
+    --bg-stripe: #131D31;
+    --bg-elevated: #16223A;
+    --bg-inverse: var(--p-white);
+    --bg-overlay: rgba(2, 6, 16, 0.68);
+
+    /* The key black was a foreground colour; on a dark surface it has to
+       become the light text colour instead. */
+    --primary-dark: var(--text-main);
+
+    --text-main: #E6EDF7;
+    --text-muted: #94A3B8;
+    --text-subtle: #64748B;
+    --text-disabled: #475569;
+    --text-inverse: var(--p-ink-900);
+    --text-accent: var(--p-cyan-400);
+    --text-success: #4ADE80;
+    --text-warning: #FBBF24;
+    --text-danger: #F87171;
+    --text-magenta: #F472B6;
+    --text-violet: #A78BFA;
+
+    --border-color: #1E293B;
+    --border-strong: #334155;
+    --border-accent: var(--p-cyan-400);
+
+    --accent-color: var(--p-cyan-400);
+    --accent-hover: var(--p-cyan-500);
+    --accent-soft: rgba(56, 189, 248, 0.12);
+    --accent-contrast: #04121F;
+    --accent-ring: rgba(56, 189, 248, 0.45);
+
+    --success-color: #4ADE80;
+    --success-soft: rgba(34, 197, 94, 0.14);
+    --success-border: rgba(34, 197, 94, 0.32);
+
+    --warning-color: #FBBF24;
+    --warning-soft: rgba(245, 158, 11, 0.14);
+    --warning-border: rgba(245, 158, 11, 0.32);
+
+    --danger-color: #F87171;
+    --danger-soft: rgba(239, 68, 68, 0.14);
+    --danger-border: rgba(239, 68, 68, 0.32);
+
+    --info-color: var(--p-cyan-400);
+    --info-soft: rgba(56, 189, 248, 0.12);
+    --info-border: rgba(56, 189, 248, 0.3);
+
+    /* Soft brand tints become translucent so CMYK chips do not glare on dark. */
+    --p-cyan-050: rgba(56, 189, 248, 0.14);
+    --p-cyan-100: rgba(56, 189, 248, 0.26);
+    --p-magenta-050: rgba(236, 0, 140, 0.16);
+    --p-magenta-100: rgba(236, 0, 140, 0.28);
+    --p-yellow-050: rgba(234, 179, 8, 0.16);
+    --p-yellow-100: rgba(234, 179, 8, 0.28);
+    --p-violet-050: rgba(124, 58, 237, 0.16);
+    --p-violet-100: rgba(124, 58, 237, 0.28);
+    --p-green-050: rgba(34, 197, 94, 0.14);
+    --p-green-100: rgba(34, 197, 94, 0.28);
+    --p-red-050: rgba(239, 68, 68, 0.14);
+    --p-red-100: rgba(239, 68, 68, 0.28);
+    --p-amber-050: rgba(245, 158, 11, 0.14);
+    --p-amber-100: rgba(245, 158, 11, 0.28);
+    --p-orange-050: rgba(234, 88, 12, 0.14);
+    --p-orange-100: rgba(234, 88, 12, 0.28);
+
+    --brand-cyan-fg: var(--p-cyan-400);
+    --brand-cyan-soft: rgba(56, 189, 248, 0.12);
+    --brand-magenta-fg: #F472B6;
+    --brand-magenta-soft: rgba(236, 0, 140, 0.16);
+    --brand-yellow-fg: var(--p-yellow-500);
+    --brand-yellow-soft: rgba(234, 179, 8, 0.16);
+    --brand-violet-fg: #A78BFA;
+    --brand-violet-soft: rgba(124, 58, 237, 0.16);
+    --brand-key-fg: var(--p-ink-300);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40);
+    --shadow-md: 0 4px 14px -4px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 18px 44px -18px rgba(0, 0, 0, 0.70);
+
+    /* Dark header is a deep brand blue rather than near-black, so the chrome
+       reads as blue while keeping white text at ~8.5:1. */
+    --header-bg: rgba(12, 74, 110, 0.92);
+    --header-solid: #0C4A6E;
+    --header-border: rgba(255, 255, 255, 0.16);
+    --header-shadow: 0 4px 20px -2px rgba(3, 20, 36, 0.55);
+    --header-text: #FFFFFF;
+    --header-text-muted: rgba(255, 255, 255, 0.78);
+    --header-hover-bg: rgba(255, 255, 255, 0.16);
+    --header-active-bg: rgba(255, 255, 255, 0.22);
+    --header-control-bg: rgba(255, 255, 255, 0.12);
+    --header-control-border: rgba(255, 255, 255, 0.26);
+    --header-control-text: rgba(255, 255, 255, 0.9);
+    --header-brand-chip: #FFFFFF;
+
+    --input-placeholder: #64748B;
+}
+
+/* ---- Global focus ring (visible for keyboard navigation) ---- */
+:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* ============================================================
+   Tailwind colour-utility overrides
+   The Tailwind CDN injects literal colours, which would ignore the
+   token layer. These re-point the remaining surface utilities at the
+   theme tokens so utility markup themes with everything else.
+   ============================================================ */
+html.theme-dark .bg-white { background-color: var(--bg-surface); }
+html.theme-dark .border-black { border-color: var(--border-strong); }
+html.theme-dark .bg-gray-50 { background-color: var(--bg-surface-2); }
+html.theme-dark .bg-slate-50 { background-color: var(--bg-surface-2); }
+html.theme-dark .bg-sky-50 { background-color: var(--accent-soft); }
+html.theme-dark .bg-rose-50 { background-color: var(--danger-soft); }
+html.theme-dark .bg-emerald-50 { background-color: var(--success-soft); }
+html.theme-dark .bg-amber-50 { background-color: var(--warning-soft); }
+html.theme-dark .border-sky-200 { border-color: var(--info-border); }
+html.theme-dark .border-rose-200 { border-color: var(--danger-border); }
+html.theme-dark .border-emerald-200 { border-color: var(--success-border); }
+html.theme-dark .border-amber-200 { border-color: var(--warning-border); }
+html.theme-dark .text-sky-600, html.theme-dark .text-sky-700 { color: var(--accent-color); }
+html.theme-dark .text-sky-800, html.theme-dark .text-sky-900 { color: var(--accent-hover); }
+html.theme-dark .text-rose-600, html.theme-dark .text-rose-700, html.theme-dark .text-rose-800 { color: var(--text-danger); }
+html.theme-dark .text-emerald-600, html.theme-dark .text-emerald-700, html.theme-dark .text-emerald-800 { color: var(--text-success); }
+html.theme-dark .text-amber-600, html.theme-dark .text-amber-700, html.theme-dark .text-amber-800 { color: var(--text-warning); }
+html.theme-dark .text-red-600, html.theme-dark .text-red-700, html.theme-dark .text-red-800 { color: var(--text-danger); }
+
+/* ===== Theme toggle button (partials.theme-toggle) ===== */
+.theme-toggle {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-strong);
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.theme-toggle:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent-color);
+    color: var(--accent-hover);
+}
+.theme-toggle__icons {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+.theme-toggle__icon {
+    position: absolute;
+    inset: 0;
+    width: 20px;
+    height: 20px;
+    transition: opacity 0.2s ease, transform 0.25s ease;
+}
+/* Light theme shows the moon (the action is "go dark"); dark theme shows the sun. */
+.theme-toggle__icon--moon { opacity: 1; transform: scale(1) rotate(0); }
+.theme-toggle__icon--sun  { opacity: 0; transform: scale(0.6) rotate(-30deg); }
+html.theme-dark .theme-toggle__icon--moon { opacity: 0; transform: scale(0.6) rotate(30deg); }
+html.theme-dark .theme-toggle__icon--sun  { opacity: 1; transform: scale(1) rotate(0); }
+
+/* Drawer variant — a full-width labelled row */
+.theme-toggle--drawer {
+    width: 100%;
+    height: 44px;
+    justify-content: flex-start;
+    gap: 0.85rem;
+    padding: 0 0.95rem;
+    background: transparent;
+    border-color: var(--border-color);
+}
+.theme-toggle--drawer .theme-toggle__label {
+    font-size: 0.94rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+        html {
+            max-width: 100vw;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        [x-cloak] { display: none !important; }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        a:hover {
+            text-decoration: none;
+        }
+
+        button {
+            font-family: inherit;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1, h2, h3, h4, h5, h6 { font-family: 'Outfit', sans-serif; }
+
+        /* â”€â”€ Top navbar â”€â”€ */
+        .admin-topbar {
+            background: var(--header-solid);
+            border-bottom: 1px solid var(--header-border);
+            padding: 0 2rem;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            width: 100%;
+            flex-shrink: 0;
+            box-shadow: var(--header-shadow);
+            transition: box-shadow 0.25s ease;
+        }
+
+        /* Header-scoped palette — in dark mode the topbar is brand blue, so
+           its links and controls need light-on-blue colours. */
+        .admin-topbar .nav-link-item { color: var(--header-text-muted); }
+        .admin-topbar .nav-link-item i { color: var(--header-text-muted); }
+        .admin-topbar .nav-link-item:hover {
+            background-color: var(--header-hover-bg);
+            color: var(--header-text);
+        }
+        .admin-topbar .nav-link-item:hover i { color: var(--header-text); }
+        .admin-topbar .nav-link-item.active {
+            background-color: var(--header-active-bg);
+            color: var(--header-text);
+        }
+        .admin-topbar .nav-link-item.active i { color: var(--header-text); }
+        .admin-topbar .nav-divider { background-color: var(--header-border); }
+        .admin-topbar .theme-toggle {
+            background: var(--header-control-bg);
+            border-color: var(--header-control-border);
+            color: var(--header-control-text);
+        }
+        .admin-topbar .theme-toggle:hover {
+            background: var(--header-hover-bg);
+            border-color: var(--header-control-border);
+            color: var(--header-text);
+        }
+        /* The wordmark is an opaque JPG, so on a blue header it needs a chip. */
+        .admin-topbar-brand img {
+            background: var(--header-brand-chip);
+            border-radius: 9px;
+            box-sizing: content-box;
+            padding: 0;
+            transition: background-color 0.25s ease, box-shadow 0.25s ease;
+        }
+        html.theme-dark .admin-topbar-brand img {
+            padding: 4px 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+        }
+
+        .admin-topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+
+        .admin-topbar-brand img {
+            height: 34px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .nav-divider {
+            width: 1px;
+            height: 22px;
+            background: var(--text-disabled);
+            margin: 0 0.35rem;
+        }
+
+        .nav-link-item {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 600;
+            padding: 0.45rem 0.8rem;
+            border-radius: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            white-space: nowrap;
+            line-height: 1;
+        }
+
+        .nav-link-item i {
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .nav-link-item:hover {
+            background: var(--accent-soft);
+            color: var(--text-accent);
+            transform: translateY(-1px);
+        }
+
+        .nav-link-item:hover i {
+            color: var(--text-accent);
+            transform: scale(1.15);
+        }
+
+        .nav-link-item.active {
+            background: var(--accent-soft);
+            color: var(--text-accent);
+            font-weight: 700;
+        }
+
+        .nav-link-item.active i {
+            color: var(--text-accent);
+        }
+
+        .nav-cart-badge {
+            background: var(--brand-magenta-fg);
+            color: var(--text-inverse);
+            font-size: 0.72rem;
+            font-weight: 800;
+            min-width: 19px;
+            height: 19px;
+            padding: 0 5px;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            box-shadow: 0 2px 6px rgba(236, 0, 140, 0.35);
+            transition: transform 0.2s ease;
+            margin-left: 2px;
+        }
+
+        .nav-link-item:hover .nav-cart-badge {
+            transform: scale(1.12);
+        }
+
+        /* â”€â”€ Portal layout â”€â”€ */
+        .admin-portal-layout {
+            display: flex;
+            align-items: flex-start;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* â”€â”€ Sidebar â”€â”€ */
+        .admin-sidebar {
+            width: 180px;
+            flex-shrink: 0;
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 40;
+        }
+
+        .admin-sidebar-header {
+            padding: 0.7rem 0.85rem 0.6rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .admin-sidebar-header .role-name {
+            font-size: 0.67rem;
+            font-weight: 800;
+            color: var(--text-subtle);
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .admin-sidebar-header .user-name {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+        }
+
+        .admin-sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.05rem;
+            padding: 0.5rem 0.5rem 0;
+        }
+
+        .admin-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.5rem 0.65rem;
+            border-radius: 8px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.13s ease;
+            border-right: 3px solid transparent;
+            line-height: 1.3;
+        }
+
+        .admin-nav-item i {
+            width: 15px;
+            text-align: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            color: var(--text-subtle);
+            transition: color 0.13s;
+        }
+
+        .admin-nav-item:hover { background: var(--bg-subtle); color: var(--text-main); border-right-color: var(--border-color); }
+        .admin-nav-item:hover i { color: var(--text-accent); }
+        .admin-nav-item.active {
+            background: var(--accent-color);
+            color: var(--text-inverse);
+            font-weight: 700;
+            border-right-color: transparent;
+        }
+        .admin-nav-item.active i { color: var(--text-inverse); }
+        .admin-nav-item.active:hover { background: var(--accent-color); color: var(--text-inverse); border-right-color: transparent; }
+        .admin-nav-item.active:hover i { color: var(--text-inverse); }
+
+        .admin-nav-divider { height: 1px; background: var(--bg-subtle); margin: 0.4rem 0.25rem; }
+
+        /* Click-to-toggle dropdown (Stocks group) */
+        .admin-nav-group { position: relative; }
+        .admin-nav-parent .admin-nav-caret { margin-left: auto; font-size: 0.62rem; color: var(--text-subtle); transition: transform 0.15s ease; width: auto; }
+        .admin-nav-submenu {
+            display: none;
+            flex-direction: column;
+            gap: 0.05rem;
+            margin: 0.1rem 0 0 0.65rem;
+            padding-left: 0.55rem;
+            border-left: 2px solid var(--border-color);
+        }
+        /* Click-to-toggle: Stocks parent opens/closes the submenu (kept open while inside a child page) */
+        .admin-nav-group.open .admin-nav-submenu { display: flex; }
+        .admin-nav-group.open .admin-nav-caret { transform: rotate(180deg); }
+        /* Opened parent lights up blue like an active item */
+        .admin-nav-group.open .admin-nav-parent { background: var(--accent-soft); color: var(--text-accent); }
+        .admin-nav-group.open .admin-nav-parent i { color: var(--text-accent); }
+        .admin-nav-group.open .admin-nav-parent.active { background: var(--accent-color); color: var(--text-inverse); }
+        .admin-nav-group.open .admin-nav-parent.active i { color: var(--text-inverse); }
+        .admin-nav-subitem {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.78rem;
+            line-height: 1.3;
+            transition: all 0.13s ease;
+        }
+        .admin-nav-subitem i { width: 13px; font-size: 0.72rem; color: var(--text-subtle); flex-shrink: 0; }
+        .admin-nav-subitem:hover { background: var(--bg-subtle); color: var(--text-main); }
+        .admin-nav-subitem:hover i { color: var(--text-accent); }
+        .admin-nav-subitem.active { background: var(--accent-soft); color: var(--text-accent); }
+        .admin-nav-subitem.active i { color: var(--text-accent); }
+        /* Momentary blue flash when a submenu link is clicked (before navigation) */
+        .admin-nav-subitem.nav-pressed { background: var(--accent-color); color: var(--text-inverse); }
+        .admin-nav-subitem.nav-pressed i { color: var(--text-inverse); }
+
+        .admin-nav-item.logout-item { color: var(--text-danger); }
+        .admin-nav-item.logout-item i { color: var(--text-danger); }
+        .admin-nav-item.logout-item:hover { background: var(--danger-soft); color: var(--text-danger); border-right-color: var(--danger-border); }
+        .admin-nav-item.logout-item:hover i { color: var(--text-danger); }
+
+        .admin-sidebar-logout-wrap {
+            padding: 0.5rem 0.5rem 0.75rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* â”€â”€ Main content â”€â”€ */
+        .admin-main-content {
+            flex: 1;
+            min-width: 0;
+            padding: 1.75rem 2rem;
+        }
+
+        /* â”€â”€ Shared utility â”€â”€ */
+        .card {
+            background: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            text-decoration: none !important;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            text-decoration: none !important;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: var(--text-inverse);
+            box-shadow: 0 1px 2px rgba(0, 153, 255, 0.2);
+        }
+        .btn-primary:hover {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: var(--text-inverse);
+        }
+        .btn-magenta { background-color: var(--brand-magenta-fg); border-color: var(--brand-magenta-fg); color: var(--text-inverse); }
+        .btn-magenta:hover { background-color: var(--brand-magenta-fg); border-color: var(--brand-magenta-fg); }
+        .btn-yellow { background-color: var(--warning-color); border-color: var(--warning-color); color: var(--text-main); font-weight: 700; }
+        .btn-yellow:hover { background-color: var(--warning-color); border-color: var(--warning-color); color: var(--text-inverse); }
+        .btn-outline {
+            background-color: var(--bg-surface);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+        .btn-outline:hover {
+            background-color: var(--bg-page);
+            border-color: var(--accent-color);
+            color: var(--text-accent);
+        }
+        .btn-outline i {
+            color: var(--text-muted);
+            transition: color 0.15s ease;
+        }
+        .btn-outline:hover i {
+            color: var(--text-accent);
+        }
+
+        .alert {
+            padding: 0.9rem 1.2rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1.25rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .alert-success { background: var(--accent-soft); color: var(--text-accent); border: 1px solid var(--accent-color); }
+        .alert-error { background: var(--brand-magenta-soft); color: var(--text-magenta); border: 1px solid var(--brand-magenta-soft); }
+
+        /* ── Toast notifications ── */
+        #toast-container {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            pointer-events: none;
+        }
+        .toast {
+            pointer-events: all;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.875rem 1rem;
+            border-radius: 14px;
+            min-width: 280px;
+            max-width: 380px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08);
+            font-size: 0.875rem;
+            font-weight: 500;
+            line-height: 1.4;
+            animation: toastIn 0.3s cubic-bezier(.21,1.02,.73,1) forwards;
+        }
+        .toast.hiding { animation: toastOut 0.25s ease forwards; }
+        .toast-success { background: var(--bg-surface); border-left: 4px solid var(--success-color); color: var(--text-main); }
+        .toast-warning { background: var(--bg-surface); border-left: 4px solid var(--warning-color); color: var(--text-main); }
+        .toast-error   { background: var(--bg-surface); border-left: 4px solid var(--danger-color); color: var(--text-main); }
+        .toast-icon { flex-shrink: 0; width: 1.75rem; height: 1.75rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; margin-top: 0.05rem; }
+        .toast-success .toast-icon { background: var(--success-soft); color: var(--text-success); }
+        .toast-warning .toast-icon { background: var(--warning-soft); color: var(--text-warning); }
+        .toast-error   .toast-icon { background: var(--danger-soft); color: var(--text-danger); }
+        .toast-close { margin-left: auto; flex-shrink: 0; background: none; border: none; color: var(--text-subtle); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 0 0 0.5rem; }
+        .toast-close:hover { color: var(--text-muted); }
+        @keyframes toastIn  { from { opacity: 0; transform: translateX(2rem) scale(0.95); } to { opacity: 1; transform: translateX(0) scale(1); } }
+        @keyframes toastOut { from { opacity: 1; transform: translateX(0); }               to { opacity: 0; transform: translateX(2rem); } }
+
+        .role-badge {
+            display: inline-block;
+            padding: 0.2rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-super-admin { background: var(--brand-magenta-fg); color: var(--text-inverse); }
+        .badge-admin { background: var(--accent-color); color: var(--text-inverse); }
+
+        /* Modal Backdrop & Container */
+        .edit-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .edit-modal-backdrop.active {
+            display: flex;
+        }
+
+        .edit-modal-box {
+            background: var(--bg-surface);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 550px;
+            max-height: calc(100vh - 2rem);
+            overflow-y: auto;
+            margin: auto;
+            padding: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            position: relative;
+        }
+
+        @media (max-width: 992px) {
+            /* The sidebar carries Tailwind utilities (sticky / top-[60px] /
+               h-[calc(100vh-60px)] / overflow-y-auto) that the runtime CDN
+               injects after this stylesheet, so the overrides below need
+               !important to actually win.
+               align-items must become stretch here: with flex-direction:column the
+               cross axis is horizontal, so flex-start would size the content to
+               its intrinsic width and push it off-screen on narrow viewports.
+               flex:1 (basis 0%) also collapses to zero height in a column, so
+               the content needs to size itself here. */
+            .admin-portal-layout { flex-direction: column !important; min-height: auto !important; align-items: stretch !important; }
+            .admin-sidebar {
+                width: 100% !important;
+                position: static !important;
+                height: auto !important;
+                border-right: none !important;
+                border-bottom: 1px solid var(--border-color);
+                display: flex;
+                align-items: center;
+                gap: 0.3rem;
+                overflow-x: auto;
+                scrollbar-width: thin;
+                -webkit-overflow-scrolling: touch;
+            }
+            .admin-main-content { flex: 0 0 auto !important; padding: 1.25rem 1rem; width: 100%; max-width: 100%; }
+
+            /* ── Mobile: turn the vertical sidebar into a horizontal scroll strip
+                   so the page content is reachable without scrolling past the
+                   entire menu first. ── */
+            .admin-sidebar {
+                display: flex;
+                align-items: center;
+                gap: 0.3rem;
+                overflow-x: auto;
+                scrollbar-width: thin;
+                -webkit-overflow-scrolling: touch;
+            }
+            .admin-sidebar-header { display: none; }
+            .admin-sidebar-nav {
+                flex-direction: row;
+                align-items: center;
+                gap: 0.25rem;
+                padding: 0.5rem;
+                overflow: visible;
+            }
+            .admin-nav-item {
+                white-space: nowrap;
+                border-right: none;
+                border-bottom: 3px solid transparent;
+                padding: 0.45rem 0.6rem;
+            }
+            .admin-nav-item:hover { border-right-color: transparent; border-bottom-color: var(--border-color); }
+            .admin-nav-item.active,
+            .admin-nav-item.active:hover { border-bottom-color: transparent; }
+            .admin-nav-item.logout-item:hover { border-right-color: transparent; border-bottom-color: var(--danger-border); }
+            .admin-nav-divider { display: none; }
+
+            /* The Stocks submenu is a hover dropdown on desktop — on touch
+               devices there is no hover, so reveal the items inline. */
+            .admin-nav-group { position: static; display: flex; align-items: center; }
+            .admin-nav-group .admin-nav-submenu {
+                display: flex !important;
+                flex-direction: row;
+                gap: 0.2rem;
+                margin: 0;
+                padding: 0;
+                border-left: none;
+            }
+            .admin-nav-parent .admin-nav-caret { display: none; }
+            .admin-nav-subitem { white-space: nowrap; }
+
+            .admin-sidebar-logout-wrap {
+                padding: 0.5rem 0.5rem 0.5rem 0;
+                border-top: none;
+                flex-shrink: 0;
+            }
+        }
+
+        /* Suppress native browser password reveal/clear icons so custom eye toggles aren't duplicated */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear,
+        input[type="password"]::-webkit-contacts-auto-fill-button,
+        input[type="password"]::-webkit-credentials-auto-fill-button {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+    </style>
+
+    </head>
+<body>
+
+    
+    <nav class="admin-topbar sticky top-0 z-50 w-full flex items-center justify-between">
+        <a href="http://127.0.0.1:8123/super-admin/dashboard" class="admin-topbar-brand">
+            <img src="http://127.0.0.1:8123/images/logo.png" alt="Grafika South">
+        </a>
+
+        <div class="ml-auto flex items-center gap-2">
+            <a href="http://127.0.0.1:8123/products" class="nav-link-item"><i class="fa-solid fa-layer-group"></i> Catalog</a>
+            <div class="nav-divider"></div>
+            <a href="http://127.0.0.1:8123/cart" class="nav-link-item">
+                <i class="fa-solid fa-cart-shopping"></i> Cart
+                <span style="background:var(--brand-magenta-fg); color:var(--text-inverse); font-size:0.72rem; font-weight:700; padding:1px 7px; border-radius:9999px; margin-left:3px;">
+                    0
+                </span>
+            </a>
+            <div class="nav-divider"></div>
+                            <a href="http://127.0.0.1:8123/super-admin/dashboard" class="nav-link-item ">
+                    <i class="fa-solid fa-shield-halved"></i> Super Admin
+                </a>
+                        <div class="nav-divider"></div>
+            <button type="button"
+            class="theme-toggle"
+            data-theme-toggle
+            aria-pressed="false"
+            aria-label="Switch to dark theme"
+            title="Switch to dark theme">
+        <span class="theme-toggle__icons" aria-hidden="true">
+            <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+            <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </span>
+    </button>
+        </div>
+    </nav>
+
+    
+    <div class="admin-portal-layout">
+
+        
+        <aside class="admin-sidebar sticky top-[60px] h-[calc(100vh-60px)] overflow-y-auto">
+
+            <nav class="admin-sidebar-nav">
+                                    <a href="http://127.0.0.1:8123/super-admin/dashboard" class="admin-nav-item ">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </a>
+                    <a href="http://127.0.0.1:8123/super-admin/hero" class="admin-nav-item ">
+                        <i class="fa-solid fa-images"></i> Banners
+                    </a>
+                    <a href="http://127.0.0.1:8123/super-admin/users" class="admin-nav-item ">
+                        <i class="fa-solid fa-users-gear"></i> Accounts
+                    </a>
+                    <a href="http://127.0.0.1:8123/super-admin/products" class="admin-nav-item ">
+                        <i class="fa-solid fa-boxes-stacked"></i> Products
+                    </a>
+                    <a href="http://127.0.0.1:8123/super-admin/orders" class="admin-nav-item ">
+                        <i class="fa-solid fa-list-check"></i> Orders
+                    </a>
+                    <div class="admin-nav-group " data-nav-group>
+                        <a href="http://127.0.0.1:8123/admin/materials" class="admin-nav-item admin-nav-parent ">
+                            <i class="fa-solid fa-warehouse"></i> Stocks
+                            <i class="fa-solid fa-chevron-down admin-nav-caret"></i>
+                        </a>
+                        <div class="admin-nav-submenu">
+                            <a href="http://127.0.0.1:8123/admin/materials" class="admin-nav-subitem "><i class="fa-solid fa-boxes-stacked"></i> Materials Stock</a>
+                            <a href="http://127.0.0.1:8123/admin/materials/stock-movements" class="admin-nav-subitem "><i class="fa-solid fa-clock-rotate-left"></i> Stock Movements</a>
+                        </div>
+                    </div>
+                    <a href="http://127.0.0.1:8123/admin/suppliers" class="admin-nav-item ">
+                        <i class="fa-solid fa-truck-field"></i> Suppliers
+                    </a>
+                    <a href="http://127.0.0.1:8123/admin/purchases" class="admin-nav-item ">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> Purchases
+                    </a>
+                    <a href="http://127.0.0.1:8123/super-admin/payment-methods" class="admin-nav-item ">
+                        <i class="fa-solid fa-credit-card"></i> Payments
+                    </a>
+                    <a href="http://127.0.0.1:8123/admin/tickets" class="admin-nav-item ">
+                        <i class="fa-solid fa-headset"></i> Support
+                    </a>
+                    <button type="button" class="admin-nav-item" onclick="openEditModal('modal-sa-security')" style="width:100%; border:none; background:none; cursor:pointer; text-align:left; font-family:inherit; font-size:0.85rem; font-weight:600; color:var(--text-muted);">
+                        <i class="fa-solid fa-shield-halved"></i> Security
+                    </button>
+                            </nav>
+
+            <div class="admin-sidebar-logout-wrap">
+                <form id="admin-logout-form" action="http://127.0.0.1:8123/logout" method="POST">
+                    <input type="hidden" name="_token" value="Aysnej9m5dMNwpcX1jQ5L7hMSKKhkzhFvo8WqpO8" autocomplete="off">                </form>
+                <button type="button" class="admin-nav-item logout-item" onclick="openAdminLogoutModal()" style="width:100%; border:none; background:none; cursor:pointer; text-align:left; font-family:inherit; font-size:0.85rem; font-weight:600;">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                </button>
+            </div>
+
+        </aside>
+
+        
+        <div id="adminLogoutModal" onclick="if(event.target===this) closeAdminLogoutModal()">
+            <div class="alm-card">
+                <div class="alm-head">
+                    <div class="alm-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
+                    <div>
+                        <div class="alm-title">Log out?</div>
+                        <div class="alm-sub">Are you sure you want to logout?</div>
+                    </div>
+                </div>
+                <div class="alm-actions">
+                    <button type="button" class="alm-cancel" onclick="closeAdminLogoutModal()">Cancel</button>
+                    <button type="submit" form="admin-logout-form" class="alm-confirm"><i class="fa-solid fa-arrow-right-from-bracket"></i> Yes, Log Out</button>
+                </div>
+            </div>
+        </div>
+        <style>
+            #adminLogoutModal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;align-items:center;justify-content:center;padding:1rem;}
+            #adminLogoutModal .alm-card{background:var(--bg-surface);border-radius:16px;max-width:400px;width:100%;padding:1.5rem;box-shadow:0 20px 50px rgba(0,0,0,.25);}
+            #adminLogoutModal .alm-head{display:flex;align-items:center;gap:.9rem;margin-bottom:1.25rem;}
+            #adminLogoutModal .alm-icon{width:44px;height:44px;border-radius:12px;background:var(--danger-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+            #adminLogoutModal .alm-icon i{color:var(--text-danger);font-size:1.1rem;}
+            #adminLogoutModal .alm-title{font-size:1.12rem;font-weight:800;color:var(--text-main);}
+            #adminLogoutModal .alm-sub{font-size:.88rem;color:var(--text-muted);margin-top:2px;}
+            #adminLogoutModal .alm-actions{display:flex;justify-content:flex-end;gap:.6rem;}
+            #adminLogoutModal .alm-cancel{padding:.6rem 1.2rem;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-surface);color:var(--text-main);font-weight:700;cursor:pointer;}
+            #adminLogoutModal .alm-cancel:hover{background:var(--bg-subtle);}
+            #adminLogoutModal .alm-confirm{padding:.6rem 1.2rem;border-radius:10px;border:none;background:var(--danger-color);color:var(--text-inverse);font-weight:700;cursor:pointer;}
+            #adminLogoutModal .alm-confirm:hover{background:var(--danger-color);}
+        </style>
+        <script>
+            function openAdminLogoutModal(){var m=document.getElementById('adminLogoutModal');if(m){m.style.display='flex';}}
+            function closeAdminLogoutModal(){var m=document.getElementById('adminLogoutModal');if(m){m.style.display='none';}}
+        </script>
+
+        
+        <main class="admin-main-content">
+
+            
+                            <div id="toast-container">
+                                                                                                </div>
+                <script>
+                    function dismissToast(el) {
+                        el.classList.add('hiding');
+                        el.addEventListener('animationend', () => el.remove(), { once: true });
+                    }
+                    // Auto-dismiss after 5 s
+                    document.addEventListener('DOMContentLoaded', function () {
+                        document.querySelectorAll('.toast').forEach(function (t) {
+                            setTimeout(function () { if (t.isConnected) dismissToast(t); }, 5000);
+                        });
+                    });
+                </script>
+            
+            <div style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">
+        Operational Staff Dashboard
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">Manage customer orders, conduct artwork design reviews, check raw material stock levels, and reply to inquiries.</p>
+</div>
+
+<!-- METRICS CARDS -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+    <div class="card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1.25rem;">
+        <div style="width: 50px; height: 50px; background: var(--danger-soft); color: var(--accent-color); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+            <i class="fa-solid fa-clipboard-list"></i>
+        </div>
+        <div>
+            <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Total Orders Today</span>
+            <div style="font-size: 1.6rem; font-weight: 800; color: var(--text-main);">0</div>
+        </div>
+    </div>
+
+    <div class="card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1.25rem;">
+        <div style="width: 50px; height: 50px; background: var(--accent-soft); color: var(--text-accent); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+            <i class="fa-solid fa-spinner"></i>
+        </div>
+        <div>
+            <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">In Production / Review</span>
+            <div style="font-size: 1.6rem; font-weight: 800; color: var(--text-accent);">0</div>
+        </div>
+    </div>
+
+    <div class="card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1.25rem;">
+        <div style="width: 50px; height: 50px; background: var(--danger-soft); color: var(--text-danger); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+            <i class="fa-solid fa-boxes-packing"></i>
+        </div>
+        <div>
+            <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Low Stock Materials</span>
+            <div style="font-size: 1.6rem; font-weight: 800; color: var(--text-danger);">2</div>
+        </div>
+    </div>
+
+    <div class="card" style="padding: 1.5rem; display: flex; align-items: center; gap: 1.25rem;">
+        <div style="width: 50px; height: 50px; background: var(--success-soft); color: var(--text-success); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+            <i class="fa-solid fa-peso-sign"></i>
+        </div>
+        <div>
+            <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Revenue This Month</span>
+            <div style="font-size: 1.6rem; font-weight: 800; color: var(--text-success);">₱530.00</div>
+        </div>
+    </div>
+</div>
+
+<!-- RECENT ORDERS TABLE -->
+<div class="card" style="padding: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text-main);">Recent Orders Pipeline</h3>
+        <a href="http://127.0.0.1:8123/admin/orders" class="btn btn-outline" style="font-size: 0.82rem; padding: 0.4rem 0.85rem;">View All Orders</a>
+    </div>
+
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+        <thead>
+            <tr style="background: var(--bg-page); text-align: left; color: var(--text-muted);">
+                <th style="padding: 0.75rem 1rem;">Order #</th>
+                <th style="padding: 0.75rem 1rem;">Customer</th>
+                <th style="padding: 0.75rem 1rem;">Total Price</th>
+                <th style="padding: 0.75rem 1rem;">Status</th>
+                <th style="padding: 0.75rem 1rem;">Date</th>
+                <th style="padding: 0.75rem 1rem; text-align: right;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.85rem 1rem; font-weight: 700; color: var(--text-main);">#GS-20261103-4ON7N</td>
+                    <td style="padding: 0.85rem 1rem;">protodex2.0 sabsab makis ako</td>
+                    <td style="padding: 0.85rem 1rem; font-weight: 700; color: var(--accent-color);">₱90.00</td>
+                    <td style="padding: 0.85rem 1rem;">
+                        <span class="role-badge" style="background: var(--bg-subtle); color: var(--text-muted); border: 1px solid var(--border-color);">
+                            completed
+                        </span>
+                    </td>
+                    <td style="padding: 0.85rem 1rem; color: var(--text-muted);">Nov 03, 2026</td>
+                    <td style="padding: 0.85rem 1rem; text-align: right;">
+                        <a href="http://127.0.0.1:8123/admin/orders/69" class="btn btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                            <i class="fa-solid fa-pen-to-square"></i> Review & Process
+                        </a>
+                    </td>
+                </tr>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.85rem 1rem; font-weight: 700; color: var(--text-main);">#GS-20261103-ZFU1T</td>
+                    <td style="padding: 0.85rem 1rem;">protodex2.0 sabsab makis ako</td>
+                    <td style="padding: 0.85rem 1rem; font-weight: 700; color: var(--accent-color);">₱90.00</td>
+                    <td style="padding: 0.85rem 1rem;">
+                        <span class="role-badge" style="background: var(--bg-subtle); color: var(--text-muted); border: 1px solid var(--border-color);">
+                            printing
+                        </span>
+                    </td>
+                    <td style="padding: 0.85rem 1rem; color: var(--text-muted);">Nov 03, 2026</td>
+                    <td style="padding: 0.85rem 1rem; text-align: right;">
+                        <a href="http://127.0.0.1:8123/admin/orders/68" class="btn btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                            <i class="fa-solid fa-pen-to-square"></i> Review & Process
+                        </a>
+                    </td>
+                </tr>
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.85rem 1rem; font-weight: 700; color: var(--text-main);">#GS-20261103-ILVJU</td>
+                    <td style="padding: 0.85rem 1rem;">protodex2.0 sabsab makis ako</td>
+                    <td style="padding: 0.85rem 1rem; font-weight: 700; color: var(--accent-color);">₱350.00</td>
+                    <td style="padding: 0.85rem 1rem;">
+                        <span class="role-badge" style="background: var(--bg-subtle); color: var(--text-muted); border: 1px solid var(--border-color);">
+                            completed
+                        </span>
+                    </td>
+                    <td style="padding: 0.85rem 1rem; color: var(--text-muted);">Nov 03, 2026</td>
+                    <td style="padding: 0.85rem 1rem; text-align: right;">
+                        <a href="http://127.0.0.1:8123/admin/orders/67" class="btn btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                            <i class="fa-solid fa-pen-to-square"></i> Review & Process
+                        </a>
+                    </td>
+                </tr>
+                    </tbody>
+    </table>
+</div>
+
+
+<div id="lowstock-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-surface); width: 100%; max-width: 520px; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); overflow: hidden; border-top: 6px solid var(--danger-color);">
+        <div style="padding: 1.5rem 1.5rem 1rem; display: flex; align-items: flex-start; gap: 1rem;">
+            <div style="width: 48px; height: 48px; background: var(--danger-soft); color: var(--text-danger); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text-danger); margin: 0 0 0.25rem;">Low Stock Alert</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">
+                    2 materials are at or below threshold. Restock soon to avoid production delays.
+                </p>
+            </div>
+        </div>
+
+        <div style="max-height: 300px; overflow-y: auto; padding: 0 1.5rem;">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);">
+                    <div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">
+                            Honda Navi <span style="color: var(--text-subtle); font-weight: 500;">&middot; motor</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Threshold: 5.00 motor</div>
+                    </div>
+                    <span class="role-badge" style="background: var(--danger-soft); color: var(--text-danger); border: 1px solid var(--danger-border);">
+                        OUT OF STOCK
+                    </span>
+                </div>
+                                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);">
+                    <div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">
+                            jamc <span style="color: var(--text-subtle); font-weight: 500;">&middot; inkk23</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Threshold: 40,400.00 liters</div>
+                    </div>
+                    <span class="role-badge" style="background: var(--warning-soft); color: var(--text-warning); border: 1px solid var(--warning-border);">
+                        73.00 liters
+                    </span>
+                </div>
+                    </div>
+
+        <div style="padding: 1.25rem 1.5rem; display: flex; gap: 0.75rem; justify-content: flex-end; background: var(--bg-page);">
+            <button type="button" onclick="document.getElementById('lowstock-overlay').style.display='none';" class="btn" style="background: var(--bg-surface); color: var(--text-muted); padding: 0.6rem 1.2rem; border-radius: 10px; font-weight: 700; border: 1.5px solid var(--border-color); cursor: pointer;">Close</button>
+            <a href="http://127.0.0.1:8123/admin/materials?stock_status=low_stock" class="btn" style="background: var(--danger-color); color: var(--text-inverse); padding: 0.6rem 1.2rem; border-radius: 10px; font-weight: 700; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <i class="fa-solid fa-boxes-packing"></i> Go to Inventory
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var overlay = document.getElementById('lowstock-overlay');
+        if (overlay) { overlay.style.display = 'flex'; }
+    });
+</script>
+        </main>
+    </div>
+
+            <div class="edit-modal-backdrop " id="modal-sa-security">
+    <div class="edit-modal-box" style="max-width: 520px;" x-data="{ tab: 'password' }">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fa-solid fa-shield-halved" style="color: var(--text-magenta);"></i> Security &amp; Credentials
+            </h3>
+            <button type="button" onclick="closeEditModal('modal-sa-security')" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--text-subtle); line-height: 1;">&times;</button>
+        </div>
+
+        
+        <div style="padding: 0.75rem 0.9rem; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; display: block;">Registered Account Email</span>
+                <strong style="font-size: 0.88rem; color: var(--text-main); letter-spacing: 0.5px;">gr************@gmail.com</strong>
+            </div>
+        </div>
+
+        
+        <div style="display: flex; gap: 0.4rem; margin-bottom: 1.15rem; background: var(--bg-subtle); padding: 0.25rem; border-radius: 10px;">
+            <button type="button"
+                    @click="tab = 'password'"
+                    :style="tab === 'password' ? 'flex: 1; padding: 0.5rem 0.75rem; border: none; background: var(--bg-surface); color: var(--text-accent); font-weight: 800; font-size: 0.85rem; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; gap: 0.45rem;' : 'flex: 1; padding: 0.5rem 0.75rem; border: none; background: transparent; color: var(--text-muted); font-weight: 700; font-size: 0.85rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.45rem;'">
+                <i class="fa-solid fa-key"></i> Change Password
+                            </button>
+                    </div>
+
+
+        
+        <div x-show="tab === 'password'" x-cloak>
+            
+            
+            
+            
+            
+                            
+                <form action="http://127.0.0.1:8123/super-admin/password/send-otp" method="POST" x-data="{ showPass: false }">
+                    <input type="hidden" name="_token" value="Aysnej9m5dMNwpcX1jQ5L7hMSKKhkzhFvo8WqpO8" autocomplete="off">
+                    <div style="margin-bottom: 0.85rem;">
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">New Password *</label>
+                        <div style="position: relative;">
+                            <input :type="showPass ? 'text' : 'password'" name="new_password" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" required style="width: 100%; padding: 0.6rem 2.5rem 0.6rem 0.85rem; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem;">
+                            <button type="button" @click="showPass = !showPass" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted);">
+                                <i class="fa-solid" :class="showPass ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 0.85rem;">
+                        <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">Confirm New Password *</label>
+                        <div style="position: relative;">
+                            <input :type="showPass ? 'text' : 'password'" name="new_password_confirmation" placeholder="Repeat new password" autocomplete="new-password" minlength="8" required style="width: 100%; padding: 0.6rem 2.5rem 0.6rem 0.85rem; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem;">
+                            <button type="button" @click="showPass = !showPass" tabindex="-1" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted);">
+                                <i class="fa-solid" :class="showPass ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    
+                    <div style="margin-bottom: 0.85rem; padding: 0.65rem 0.8rem; background: var(--accent-soft); border: 1px solid var(--info-border); border-radius: 8px; display: flex; align-items: center; gap: 0.6rem;">
+                        <i class="fa-solid fa-envelope" style="color: var(--text-accent); font-size: 1.05rem; flex-shrink: 0;"></i>
+                        <p style="font-size: 0.78rem; color: var(--text-accent); margin: 0; line-height: 1.4;">
+                            Security verification code will be sent automatically to: <strong>gr************@gmail.com</strong>
+                        </p>
+                    </div>
+
+                    
+                    <div style="margin-bottom: 1rem; border: 1px solid var(--brand-magenta-soft); border-radius: 10px; padding: 0.75rem 0.85rem; background: var(--brand-magenta-soft);">
+                        <label style="font-size: 0.82rem; font-weight: 800; color: var(--text-magenta); display: block; margin-bottom: 0.3rem;">
+                            <i class="fa-solid fa-key"></i> Current Password
+                        </label>
+                        <div style="position: relative;">
+                            <input type="password" name="super_admin_password" id="input-sec-pw-pass-request" required autocomplete="new-password" placeholder="Confirm your current password first" style="width: 100%; padding: 0.6rem 2.5rem 0.6rem 0.85rem; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem;">
+                            <button type="button" onclick="togglePasswordVisibility('input-sec-pw-pass-request', 'eye-icon-sec-pw-pass-request')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted);">
+                                <i class="fa-solid fa-eye" id="eye-icon-sec-pw-pass-request"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem;">
+                        <button type="button" class="btn btn-outline" onclick="closeEditModal('modal-sa-security')">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="background: var(--accent-color); border: none;">
+                            <i class="fa-solid fa-paper-plane"></i> Send Security Code
+                        </button>
+                    </div>
+                </form>
+                    </div>
+
+
+            </div>
+</div>
+    
+    <script>
+        function openEditModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+
+        function closeEditModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input && icon) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+        }
+
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('edit-modal-backdrop')) {
+                e.target.classList.remove('active');
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.edit-modal-backdrop.active').forEach(modal => {
+                    modal.classList.remove('active');
+                });
+            }
+        });
+
+        // Click-to-toggle sidebar groups (Stocks): every click on the parent
+        // only opens/closes the submenu — it never navigates directly.
+        document.querySelectorAll('[data-nav-group] .admin-nav-parent').forEach(function (parent) {
+            parent.addEventListener('click', function (e) {
+                e.preventDefault();
+                var group = parent.closest('[data-nav-group]');
+                if (!group) return;
+                document.querySelectorAll('[data-nav-group].open').forEach(function (g) {
+                    if (g !== group) g.classList.remove('open');
+                });
+                group.classList.toggle('open');
+            });
+        });
+        document.querySelectorAll('[data-nav-group] .admin-nav-subitem').forEach(function (sub) {
+            sub.addEventListener('click', function () {
+                sub.classList.add('nav-pressed');
+            });
+        });
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('[data-nav-group]')) {
+                document.querySelectorAll('[data-nav-group].open').forEach(function (g) {
+                    if (g.querySelector('.admin-nav-subitem.active')) return; // keep active section expanded
+                    g.classList.remove('open');
+                });
+            }
+        });
+    </script>
+
+        </body>
+</html>

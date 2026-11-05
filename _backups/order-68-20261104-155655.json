@@ -1,0 +1,80 @@
+{
+    "backed_up_at": "2026-11-04 15:56:55",
+    "order": {
+        "id": 68,
+        "order_number": "GS-20261103-ZFU1T",
+        "user_id": 5,
+        "parent_id": null,
+        "is_parent": false,
+        "is_walkin": 0,
+        "fulfillment_type": "delivery",
+        "walkin_first_name": null,
+        "walkin_last_name": null,
+        "walkin_email": null,
+        "walkin_contact_number": null,
+        "walkin_address": null,
+        "status": "completed",
+        "cancellation_status": "none",
+        "cancellation_reason": null,
+        "cancellation_requested_at": null,
+        "cancelled_at": null,
+        "cancellation_admin_notes": null,
+        "payment_status": "paid",
+        "refund_status": "none",
+        "refund_method": null,
+        "refund_reference": null,
+        "refund_amount": null,
+        "refunded_at": null,
+        "payment_plan": "downpayment",
+        "downpayment_amount": "45.00",
+        "remaining_balance": "45.00",
+        "is_custom_order": true,
+        "estimated_production_minutes": 10,
+        "custom_terms_agreed": true,
+        "total_price": "90.00",
+        "total_amount": "90.00",
+        "notes": null,
+        "design_file_path": null,
+        "created_at": "2026-11-03T07:33:48.000000Z",
+        "updated_at": "2026-11-04T07:47:58.000000Z"
+    },
+    "payments": [
+        {
+            "id": 59,
+            "order_id": 68,
+            "payment_method": "Gcash",
+            "amount": "45.00",
+            "payment_plan": "downpayment",
+            "proof_of_payment_path": "payment_proofs\/oFMqLd3Re4bHzkowfNrxanKmxxkV5utqYoxjD6gb.webp",
+            "status": "pending",
+            "verified_by": null,
+            "created_at": "2026-11-03T07:33:48.000000Z",
+            "updated_at": "2026-11-03T07:33:48.000000Z"
+        }
+    ],
+    "order_items": [
+        {
+            "id": 65,
+            "order_id": 68,
+            "product_id": 21,
+            "quantity": 1,
+            "unit_price": "90.00",
+            "subtotal": "90.00",
+            "options_selected": "{\"design\":\"black\"}",
+            "production_time_minutes": 10,
+            "created_at": "2026-11-03 15:33:48",
+            "updated_at": "2026-11-03 15:33:48"
+        }
+    ],
+    "order_messages": [
+        {
+            "id": 27,
+            "order_id": 68,
+            "user_id": 6,
+            "message": "tangina mo hirap nyan",
+            "attachment_path": null,
+            "created_at": "2026-11-04 15:09:12",
+            "updated_at": "2026-11-04 15:09:12"
+        }
+    ]
+}
